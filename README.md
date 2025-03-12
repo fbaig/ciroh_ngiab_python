@@ -21,3 +21,7 @@ test_ngiab.run()
 test_ngiab_serial = NGIAB(data_dir, serial_execution_mode=True)
 test_ngiab_serial.run()
 ```
+## JupyterHub with NGIAB
+Most JupyterHub environments are Ubuntu based whereas NGIAB is built on `rockylinux9` as base image. 
+
+`2i2c_rockylinux/` directory contains `rockylinux9` variant of `2i2c` template image based on popular `pangeo` based dockerfile converted to `rockylinux9` as base image in `pangeo-notebook-rocky/` 
