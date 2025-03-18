@@ -24,6 +24,12 @@ test_ngiab_serial.run()
 ## JupyterHub with NGIAB
 Most JupyterHub environments are Ubuntu based whereas NGIAB is built on `rockylinux9` as base image. 
 
+### NGIAB with pangeo-notebook as base image (under active development)
+[NOTE] `ngiab-ubuntu`, as of now, 
+  - builds without `troute`
+  - `cmake` command to compile `ngen` needs to be executed manually inside the image
+
 `ngiab-ubuntu/` directory contains dockerfile to generate `ubuntu:22.04` based NGIAB image.
 
+### NGIAB with rockylinux as base image (not under development anymore)
 `2i2c_rockylinux/` directory contains `rockylinux9` variant of `2i2c` template image based on popular `pangeo` based dockerfile converted to `rockylinux9` as base image in `pangeo-notebook-rocky/` 
