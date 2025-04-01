@@ -1,12 +1,11 @@
 #!/bin/bash
 
-NAME="ngiab-ubuntu-wo-troute-clean"
-#docker buildx -t $NAME .
-#docker build --no-cache --platform linux/amd64 -t $NAME .
+NAME="ngiab-ubuntu-2i2c"
 docker build --platform linux/amd64 -t $NAME .
-#docker build -t $NAME .
 
-# docker run -it \
-#        -v "${PWD}":/shared/ \
-#        $NAME \
-#        bash
+docker run -it \
+       -v "${PWD}":/shared/ \
+       -v "${PWD}/../../../NextGen/ngen-data":/data/ \
+       -p 8888:8888 \
+       $NAME \
+       jupyter lab --ip 0.0.0.0 /shared

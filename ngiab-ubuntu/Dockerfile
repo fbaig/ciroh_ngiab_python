@@ -80,6 +80,7 @@ ARG COMMON_BUILD_ARGS="-DNGEN_WITH_EXTERN_ALL=ON \
     -DCMAKE_C_COMPILER=/usr/bin/gcc \
     -DCMAKE_CXX_COMPILER=/usr/bin/g++ \
     "
+SHELL ["mamba", "run", "--no-capture-output", "-n", "notebook", "/bin/bash", "-c"]
 RUN cmake -G Ninja -B cmake_build_serial -S . ${COMMON_BUILD_ARGS} -DNGEN_WITH_MPI:BOOL=OFF && \
     cmake --build cmake_build_serial --target all -- -j $(nproc)
 
@@ -92,6 +93,7 @@ RUN cmake -G Ninja -B cmake_build_parallel -S . ${COMMON_BUILD_ARGS} ${MPI_BUILD
 ##################################
 FROM ngen_build AS restructure_files
 RUN mkdir -p /dmod/datasets /dmod/datasets/static /dmod/shared_libs /dmod/bin && \
+    shopt -s globstar && \
     cp -a ./extern/**/cmake_build/*.so* /dmod/shared_libs/. || true && \
     cp -a ./extern/noah-owp-modular/**/*.TBL /dmod/datasets/static && \
     cp -a ./cmake_build_parallel/ngen /dmod/bin/ngen-parallel || true && \
@@ -104,8 +106,8 @@ FROM restructure_files AS final
 
 WORKDIR /ngen
 #COPY HelloNGEN.sh /ngen/HelloNGEN.sh
-COPY --from=ngen_build /ngen /ngen
-COPY --from=restructure_files /dmod /dmod
+#COPY --from=ngen_build /ngen /ngen
+#COPY --from=restructure_files /dmod /dmod
 
 ENV FC=gfortran NETCDF=/usr/include
 ENV PATH="/ngen/.venv/bin:$PATH"
@@ -138,6 +140,111 @@ RUN uv pip install --no-cache-dir /ngen/ngen/extern/lstm --extra-index-url https
 RUN echo "export PS1='\u\[\033[01;32m\]@ngiab_dev\[\033[00m\]:\[\033[01;35m\]\W\[\033[00m\]\$ '" >> ~/.bashrc
 # ENTRYPOINT ["./HelloNGEN.sh"]
 
+##################################
+# 2i2c template packages
+##################################
 
+USER root
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PATH ${NB_PYTHON_PREFIX}/bin:$PATH
 
-# USER ${NB_USER}
+# Needed for apt-key to work
+RUN apt-get update -qq --yes > /dev/null && \
+    apt-get install --yes -qq gnupg2 > /dev/null && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN apt-get -y update \
+ && apt-get install -y dbus-x11 \
+   firefox \
+   xfce4 \
+   xfce4-panel \
+   xfce4-session \
+   xfce4-settings \
+   xorg \
+   xubuntu-icon-theme \
+   curl \
+ && rm -rf /var/lib/apt/lists/*
+
+# Install Node.js and npm
+RUN curl -sL https://deb.nodesource.com/setup_16.x | bash - \
+    && apt-get install -y nodejs
+
+# Install TurboVNC (https://github.com/TurboVNC/turbovnc)
+ARG TURBOVNC_VERSION=2.2.6
+RUN wget -q "https://sourceforge.net/projects/turbovnc/files/${TURBOVNC_VERSION}/turbovnc_${TURBOVNC_VERSION}_amd64.deb/download" -O turbovnc.deb \
+    && apt-get update -qq --yes > /dev/null \
+    && apt-get install -y ./turbovnc.deb > /dev/null \
+    # remove light-locker to prevent screen lock
+    && apt-get remove -y light-locker > /dev/null \
+    && rm ./turbovnc.deb \
+    && ln -s /opt/TurboVNC/bin/* /usr/local/bin/ \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN mamba install -n ${CONDA_ENV} -y websockify
+
+# Install jupyter-remote-desktop-proxy with compatible npm version
+RUN export PATH=${NB_PYTHON_PREFIX}/bin:${PATH} \
+    && npm install -g npm@7.24.0 \
+    && uv pip install --system --no-cache-dir \
+          https://github.com/jupyterhub/jupyter-remote-desktop-proxy/archive/main.zip
+
+# Install jupyterlab_vim extension and plugin to download the folder/files
+RUN uv pip install --system jupyterlab_vim jupyter-tree-download
+
+# Install Google Cloud SDK (gcloud, gsutil)
+RUN apt-get update && \
+    apt-get install -y curl gnupg && \
+    echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] http://packages.cloud.google.com/apt cloud-sdk main" | tee -a /etc/apt/sources.list.d/google-cloud-sdk.list && \
+    curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key --keyring /usr/share/keyrings/cloud.google.gpg  add - && \
+    apt-get update -y && \
+    apt-get install google-cloud-sdk -y
+
+########################
+# Issue installing all packages at the same time
+# https://stackoverflow.com/questions/79547588/uv-pip-install-fails-for-multiple-packages
+########################
+# # Install gis, hydro etc. packages
+# RUN uv pip install --system spatialpandas \
+#            	   	    easydev \
+# 			    colormap \
+# 			    colorcet \
+# 			    duckdb \
+# 			    dask_geopandas \
+# 			    hydrotools \
+# 			    sidecar \
+# 			    dataretrieval \
+# 			    google-cloud-bigquery
+RUN uv pip install --system spatialpandas
+RUN uv pip install --system easydev
+RUN uv pip install --system colormap
+RUN uv pip install --system colorcet
+RUN uv pip install --system duckdb
+RUN uv pip install --system dask_geopandas
+RUN uv pip install --system hydrotools
+RUN uv pip install --system sidecar
+RUN uv pip install --system dataretrieval
+RUN uv pip install --system google-cloud-bigquery
+
+# Upgrade colorama to resolve dependency conflict
+RUN uv pip install --system --upgrade colorama
+
+# Install nb_black separately to address metadata generation issue
+RUN uv pip install --system nb_black==1.0.5
+
+# Install nbfetch for hydroshare
+RUN pip install -U --no-cache-dir --upgrade-strategy only-if-needed git+https://github.com/hydroshare/nbfetch.git@hspuller-auth
+# enable jupyter_server extension
+RUN jupyter server extension enable --py nbfetch --sys-prefix
+
+RUN uv pip install --system dask_labextension
+
+# Update custom Jupyter Lab settings
+RUN sed -i 's/\"default\": true/\"default\": false/g' /srv/conda/envs/notebook/share/jupyter/labextensions/@axlair/jupyterlab_vim/schemas/@axlair/jupyterlab_vim/plugin.json
+
+# Downgrade pydantic to avoid issues with ngen is not compatible with pydantic2
+RUN uv pip install --system 'pydantic<2'
+
+# To avoid error for ngen-parallel
+ENV RDMAV_FORK_SAFE=1
+
+USER ${NB_USER}
