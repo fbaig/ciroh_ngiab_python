@@ -26,8 +26,7 @@ Most JupyterHub environments are Ubuntu based whereas NGIAB is built on `rockyli
 
 ### NGIAB with pangeo-notebook as base image (under active development)
 [NOTE] `ngiab-ubuntu`, as of now, 
-  - builds without `troute`
-  - `cmake` command to compile `ngen` needs to be executed manually inside the image
+  - builds without `/ngen/troute_url` and `/ngen/ngen_url`
 
 `ngiab-ubuntu/` directory contains dockerfile to generate `ubuntu:22.04` based NGIAB image.
 
