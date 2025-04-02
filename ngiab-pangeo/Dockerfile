@@ -189,7 +189,8 @@ RUN export PATH=${NB_PYTHON_PREFIX}/bin:${PATH} \
           https://github.com/jupyterhub/jupyter-remote-desktop-proxy/archive/main.zip
 
 # Install jupyterlab_vim extension and plugin to download the folder/files
-RUN uv pip install --system jupyterlab_vim jupyter-tree-download
+RUN uv pip install --system jupyterlab_vim
+#RUN uv pip install --system notebook jupyter-tree-download
 
 # Install Google Cloud SDK (gcloud, gsutil)
 RUN apt-get update && \
@@ -231,10 +232,10 @@ RUN uv pip install --system --upgrade colorama
 # Install nb_black separately to address metadata generation issue
 RUN uv pip install --system nb_black==1.0.5
 
-# Install nbfetch for hydroshare
-RUN pip install -U --no-cache-dir --upgrade-strategy only-if-needed git+https://github.com/hydroshare/nbfetch.git@hspuller-auth
-# enable jupyter_server extension
-RUN jupyter server extension enable --py nbfetch --sys-prefix
+# # Install nbfetch for hydroshare
+# RUN pip install -U --no-cache-dir --upgrade-strategy only-if-needed git+https://github.com/hydroshare/nbfetch.git@hspuller-auth
+# # enable jupyter_server extension
+# RUN jupyter server extension enable --py nbfetch --sys-prefix
 
 RUN uv pip install --system dask_labextension
 

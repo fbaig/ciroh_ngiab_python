@@ -13,10 +13,13 @@ class NGIAB:
 
         self._cpu_count = multiprocessing.cpu_count()
 
-        ''' Note: Only first file is used '''
-        self._selected_catchment = list(Path(self._data_dir).rglob('*.gpkg'))
-        self._selected_nexus = list(Path(self._data_dir).rglob('*.gpkg'))
-        self._selected_realizations = list(Path(self._data_dir).rglob('*realization*.json'))
+        '''
+        Note: Only first file is used.
+        Since ngen runs from the data directory itself, remove preceeding path
+        '''
+        self._selected_catchment = [p.relative_to(*p.parts[:1]) for p in list(Path(self._data_dir).rglob('*.gpkg'))]
+        self._selected_nexus = [p.relative_to(*p.parts[:1]) for p in list(Path(self._data_dir).rglob('*.gpkg'))]
+        self._selected_realizations = [p.relative_to(*p.parts[:1]) for p in list(Path(self._data_dir).rglob('*realization*.json'))]
 
         self._partitions_file = list(Path(self._data_dir).rglob(f'*partitions_{self._cpu_count}.json'))
 

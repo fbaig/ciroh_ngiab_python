@@ -1,5 +1,0 @@
-git
-groff
-tree
-vim
-nano
