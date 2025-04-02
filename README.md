@@ -27,7 +27,7 @@ docker run -it \
  - `ngiab.py` has the python wrapper code with can imported as a python module
  - `test_ngiab.py` has code showing usage of the python wrapper module
     - The same can be done in a Jupyter environment launched with all NGIAB dependencies
-```
+```python
 from ngiab import NGIAB
 data_dir = './AWI_16_2863657_007'
 
