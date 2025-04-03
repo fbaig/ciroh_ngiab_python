@@ -44,4 +44,4 @@ test_ngiab_serial.run()
  - `ngiab-pangeo/` directory contains scripts to generate `pangeo/pangeo-notebook:2024.04.08` based NGIAB image. The image also adheres to [template](https://github.com/CIROH-UA/awi-ciroh-image/tree/main) required for 2i2c JupyterHub environment provided by CIROH.
     - `docker_run.sh` build a local image with `Jupyter`, `ngen` and `2i2c` packages.
     - Once built successfully, the script also launches a container for local working.
-	- [WARN] `ngiab-pangeo`, as of now, builds without `/ngen/troute_url` and `/ngen/ngen_url`
+	- [!WARNING] `ngiab-pangeo`, as of now, builds without `/ngen/troute_url` and `/ngen/ngen_url`

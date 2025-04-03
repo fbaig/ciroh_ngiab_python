@@ -58,9 +58,9 @@ class NGIAB:
 
     def _generate_partition(self,
                             catchment_data_path: str,
-                            nexus_data_path: str,
-                            partitions_output_path: str
-                            ):
+                            nexus_data_path: str
+                            ) -> str:
+        partitions_output_path: str = f'partitions_{self._cpu_count}.json'
         try:
             subprocess.run(['/dmod/bin/partitionGenerator',
                             catchment_data_path,
@@ -71,67 +71,63 @@ class NGIAB:
                             ''
                             ],
                            check=True)
+            return partitions_output_path
         except subprocess.CalledProcessError as e:
             print(f'NBIAB partitioning failed with status {e.returncode}.')
-            pass
-        pass
+        return None
 
     def run(self):
         if not self._validate_inputs(): return
 
         ''' NextGen model utility expect to run in data directory '''
+        cwd = os.getcwd()
         os.chdir(self._data_dir)
 
-        run_cmd = []
-        if (self._serial_execution_mode):
-            print('Run NextGen Model Framework in Serial Model ...')
-            run_cmd = ['/dmod/bin/ngen-serial',
-                       self._selected_catchment[0],
-                       'all',
-                       self._selected_nexus[0],
-                       'all',
-                       self._selected_realizations[0]
-                       ]
-            print('Running command: ' + ' '.join(str(x) for x in run_cmd))
-        else:
-            print('Run NextGen Model Framework in Parallel Model ...')
-            # generate partitions if required
-            if (len(self._partitions_file) <= 0):
-                print('No partitions file found, generating ...')
-                self._partitions_file = os.path.join(self._data_dir,
-                                                     f'partitions_{self._cpu_count}.json')
-                self._generate_partition(self._selected_catchment[0],
-                                         self._selected_nexus[0],
-                                         self._partitions_file
-                                         )
-                pass
+        try:
+            run_cmd = []
+            if (self._serial_execution_mode):
+                print('Run NextGen Model Framework in Serial Model ...')
+                run_cmd = ['/dmod/bin/ngen-serial',
+                           self._selected_catchment[0],
+                           'all',
+                           self._selected_nexus[0],
+                           'all',
+                           self._selected_realizations[0]
+                           ]
+                print('Running command: ' + ' '.join(str(x) for x in run_cmd))
             else:
-                self._partitions_file = self._partitions_file[0]
+                print('Run NextGen Model Framework in Parallel Model ...')
+                # generate partitions if required
+                if (len(self._partitions_file) <= 0):
+                    print('No partitions file found, generating ...')
+                    self._partitions_file = self._generate_partition(self._selected_catchment[0], self._selected_nexus[0])
+                    print('Partitions file generated: ' + os.path.abspath(self._partitions_file))
+                    pass
+                else:
+                    self._partitions_file = self._partitions_file[0]
+                    pass
+                # model command in parallel mode
+                run_cmd = ['mpirun',
+                           '-n',
+                           str(self._cpu_count),
+                           '/dmod/bin/ngen-parallel',
+                           self._selected_catchment[0],
+                           'all',
+                           self._selected_nexus[0],
+                           'all',
+                           self._selected_realizations[0],
+                           self._partitions_file
+                           ]
                 pass
-            # model command in parallel mode
-            run_cmd = ['mpirun',
-                       '-n',
-                       str(self._cpu_count),
-                       '/dmod/bin/ngen-parallel',
-                       self._selected_catchment[0],
-                       'all',
-                       self._selected_nexus[0],
-                       'all',
-                       self._selected_realizations[0],
-                       self._partitions_file
-                       ]
-            pass
 
-        # execute NGIAB model
-        result = subprocess.run(run_cmd, check=True)
-        print(result.stdout)
-        print(result.stderr)
-        # try:
-        #     subprocess.run(run_cmd, check=True)
-        # except subprocess.CalledProcessError as e:
-        #     print(f'NBIAB execution failed with status {e.returncode}.')
-        #     pass
-        # pass
-
-        print('NGIAB executed successfully ...')
-        return
+            # execute NGIAB model
+            result = subprocess.run(run_cmd, check=True)
+            #print(result.stdout)
+            #print(result.stderr)
+            print('NGIAB executed successfully ...')
+            return
+        except Exception as e:
+            print(f'NGIAB failed to run: {e}')
+        finally:
+            # change directory back to working directory
+            os.chdir(cwd)
