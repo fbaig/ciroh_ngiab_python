@@ -105,9 +105,8 @@ RUN mkdir -p /dmod/datasets /dmod/datasets/static /dmod/shared_libs /dmod/bin &&
 FROM restructure_files AS final
 
 WORKDIR /ngen
-#COPY HelloNGEN.sh /ngen/HelloNGEN.sh
-#COPY --from=ngen_build /ngen /ngen
-#COPY --from=restructure_files /dmod /dmod
+COPY --from=ngen_build /ngen /ngen
+COPY --from=restructure_files /dmod /dmod
 
 ENV FC=gfortran NETCDF=/usr/include
 ENV PATH="/ngen/.venv/bin:$PATH"
@@ -117,28 +116,27 @@ RUN ls /dmod/shared_libs
 #### TROUTE ####
 COPY --from=troute_build /ngen/t-route/src/troute-*/dist/*.whl /tmp/
 RUN ln -s /dmod/bin/ngen /usr/local/bin/ngen
-ENV UV_INSTALL_DIR=/root/.cargo/bin
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh
-ENV PATH="/root/.cargo/bin:${PATH}"
+
+# ENV UV_INSTALL_DIR=/root/.cargo/bin
+# RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+# ENV PATH="/root/.cargo/bin:${PATH}"
 
 #### TROUTE ####
-# RUN uv self update && uv venv && \
+# RUN uv venv && \
 #    uv pip install --system --no-cache-dir /tmp/*.whl netCDF4==1.6.3
-RUN uv venv && \
-   uv pip install --system --no-cache-dir /tmp/*.whl netCDF4==1.6.3
+RUN uv pip install --system --no-cache-dir /tmp/*.whl netCDF4==1.6.3
+
 
 RUN rm -rf /tmp/*.whl
 RUN echo "/dmod/shared_libs/" >> /etc/ld.so.conf.d/ngen.conf && ldconfig -v
 ENV PATH=$PATH:/usr/bin/mpich
-# RUN chmod a+x /dmod/bin/* /ngen/HelloNGEN.sh
 RUN uv pip install --system numpy==$(/dmod/bin/ngen --info | grep -e 'NumPy Version: ' | cut -d ':' -f 2 | uniq | xargs)
-ENV PATH="/ngen/.venv/bin:${PATH}"
+#ENV PATH="/ngen/.venv/bin:${PATH}"
 COPY --from=ngen_clone /ngen/ngen/extern/lstm/lstm /ngen/ngen/extern/lstm
 RUN uv pip install --no-cache-dir /ngen/ngen/extern/lstm --extra-index-url https://download.pytorch.org/whl/cpu
 # COPY --from=troute_build /tmp/troute_url /ngen/troute_url
 # COPY --from=ngen_build /tmp/ngen_url /ngen/ngen_url
 RUN echo "export PS1='\u\[\033[01;32m\]@ngiab_dev\[\033[00m\]:\[\033[01;35m\]\W\[\033[00m\]\$ '" >> ~/.bashrc
-# ENTRYPOINT ["./HelloNGEN.sh"]
 
 ##################################
 # 2i2c template packages
@@ -146,7 +144,7 @@ RUN echo "export PS1='\u\[\033[01;32m\]@ngiab_dev\[\033[00m\]:\[\033[01;35m\]\W\
 
 USER root
 ENV DEBIAN_FRONTEND=noninteractive
-ENV PATH ${NB_PYTHON_PREFIX}/bin:$PATH
+ENV PATH=${NB_PYTHON_PREFIX}/bin:$PATH
 
 # Needed for apt-key to work
 RUN apt-get update -qq --yes > /dev/null && \
@@ -248,4 +246,39 @@ RUN uv pip install --system 'pydantic<2'
 # To avoid error for ngen-parallel
 ENV RDMAV_FORK_SAFE=1
 
+##################################
+# ngiab extra stuff
+# move before 2i2c packages once tested
+##################################
+
+# Setup and install ngiab_data_preprocess module to allow preparing data for ngiab
+RUN uv pip install --system ngiab_data_preprocess==4.1.0
+RUN uv run python -c "from data_sources.source_validation import download_and_update_hf; download_and_update_hf();"
+
+# Update permissions to make '.ngiab' available to Jupyter non-root user
+RUN chown -R ${NB_USER}:${NB_USER} /home/jovyan/.ngiab/
+
+##########
+# Teehr (https://github.com/arpita0911patel/ngiab-teehr/tree/main)
+##########
+WORKDIR /ngen/teehr
+
+RUN apt-get update && apt-get install -y git openjdk-11-jdk
+
+ENV JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
+ENV PATH=$PATH:$JAVA_HOME/bin
+
+RUN git clone https://github.com/arpita0911patel/ngiab-teehr.git
+
+RUN pip install uv
+RUN uv pip install --system --no-cache-dir -r ngiab-teehr/requirements.txt
+
+RUN cp -r ngiab-teehr/scripts/* . \
+    && rm -r ngiab-teehr
+
+# Update permissions to allow Jupyter non-root user to install packages
+RUN chown -R ${NB_USER}:${NB_USER} /home/jovyan/.cache/
+# RUN chown -R ${NB_USER}:${NB_USER} /srv/conda/
+
+WORKDIR /ngen/
 USER ${NB_USER}
