@@ -10,6 +10,14 @@ Most JupyterHub environments are Ubuntu based whereas NGIAB is built on `rockyli
 ### Sample Data
  - Follow "Quick Start Guide" from [NGIAB](https://github.com/CIROH-UA/NGIAB-CloudInfra/tree/main) to get sample data
 
+### Generate Data Using [`ngiab_data_preprocess`](https://github.com/CIROH-UA/NGIAB_data_preprocess/tree/main) utility
+The utility is part of the docker image and can be executed to download and generate input data for the NGIAB model.
+
+```bash
+python -m ngiab_data_cli -i cat-5173 -a --start 2022-01-01 --end 2022-02-28
+```
+For further ways to run the utility, please refer to [NBIAB Data Preprocess documentation](https://github.com/CIROH-UA/NGIAB_data_preprocess/tree/main?tab=readme-ov-file#examples).
+
 ### Running Jupyter with NGIAB
  - A compiled image is available at [https://quay.io/repository/fbaig25/ngiab-2i2c](https://quay.io/repository/fbaig25/ngiab-2i2c) 
  - The same image can be used to launch [2i2c staging JupyterHub](https://staging.ciroh.awi.2i2c.cloud) with custom image
