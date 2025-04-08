@@ -1,3 +1,4 @@
+import logging
 import os, glob
 import subprocess
 import multiprocessing
@@ -100,7 +101,8 @@ class NGIAB:
                 # generate partitions if required
                 if (len(self._partitions_file) <= 0):
                     print('No partitions file found, generating ...')
-                    self._partitions_file = self._generate_partition(self._selected_catchment[0], self._selected_nexus[0])
+                    self._partitions_file = self._generate_partition(self._selected_catchment[0],
+                                                                     self._selected_nexus[0])
                     print('Partitions file generated: ' + os.path.abspath(self._partitions_file))
                     pass
                 else:
@@ -122,8 +124,6 @@ class NGIAB:
 
             # execute NGIAB model
             result = subprocess.run(run_cmd, check=True)
-            #print(result.stdout)
-            #print(result.stderr)
             print('NGIAB executed successfully ...')
             return
         except Exception as e:
@@ -131,3 +131,50 @@ class NGIAB:
         finally:
             # change directory back to working directory
             os.chdir(cwd)
+
+        pass
+    pass
+
+# '''
+# Most of the code is copied from the following repository
+# Original Author: Josh Cunningham
+# Reference: https://github.com/CIROH-UA/NGIAB_data_preprocess/
+# '''
+# class NGIABDataPreprocess:
+#     from data_processing.forcings import create_forcings
+#     from data_processing.create_realization import create_realization, create_em_realization
+#     from data_processing.datasets import load_aorc_zarr, load_v3_retrospective_zarr
+#     from data_processing.dataset_utils import save_and_clip_dataset
+
+#     def __init__(self,
+#                  data_dir: str,
+#                  serial_execution_mode: bool = False):
+
+#         pass
+
+#     '''
+    
+#     '''
+#     def subset(input_feature: list[str],
+#                latlon: str=None,
+#                gage: str=None,
+#                ):
+#         input_feature = input_feature.replace('_', '-')
+#         if len(input_feature.split('-')) > 1:
+#         prefix = input_feature.split('-')[0]
+#         if prefix.lower() == 'gage':
+#             args.gage = True
+#         elif prefix.lower() == 'wb':
+#             logging.warning('Waterbody IDs are no longer supported!')
+#             logging.warning(f'Automatically converting {input_feature} to catid')
+#             time.sleep(2)
+        
+#         from data_processing.subset import subset
+#         subset(feature_to_subset, output_gpkg_path=paths.geopackage_path)
+#         pass
+
+#     def subset_vpu():
+#         from data_processing.subset import subset_vpu
+#         subset_vpu(args.vpu, output_gpkg_path=paths.geopackage_path)
+#         logging.info("Subsetting complete.")
+#         pass
