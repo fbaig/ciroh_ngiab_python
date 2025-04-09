@@ -102,74 +102,29 @@ RUN mkdir -p /dmod/datasets /dmod/datasets/static /dmod/shared_libs /dmod/bin &&
     cd /dmod/bin && \
     (stat ngen-parallel && ln -s ngen-parallel ngen) || (stat ngen-serial && ln -s ngen-serial ngen)
 ###################################
-FROM restructure_files AS final
-
-WORKDIR /ngen
-COPY --from=ngen_build /ngen /ngen
-COPY --from=restructure_files /dmod /dmod
-
-ENV FC=gfortran NETCDF=/usr/include
-ENV PATH="/ngen/.venv/bin:$PATH"
-
-RUN ls /dmod/shared_libs
-
-#### TROUTE ####
-COPY --from=troute_build /ngen/t-route/src/troute-*/dist/*.whl /tmp/
-RUN ln -s /dmod/bin/ngen /usr/local/bin/ngen
-
-# ENV UV_INSTALL_DIR=/root/.cargo/bin
-# RUN curl -LsSf https://astral.sh/uv/install.sh | sh
-# ENV PATH="/root/.cargo/bin:${PATH}"
-
-#### TROUTE ####
-# RUN uv venv && \
-#    uv pip install --system --no-cache-dir /tmp/*.whl netCDF4==1.6.3
-RUN uv pip install --system --no-cache-dir /tmp/*.whl netCDF4==1.6.3
-
-
-RUN rm -rf /tmp/*.whl
-RUN echo "/dmod/shared_libs/" >> /etc/ld.so.conf.d/ngen.conf && ldconfig -v
-ENV PATH=$PATH:/usr/bin/mpich
-RUN uv pip install --system numpy==$(/dmod/bin/ngen --info | grep -e 'NumPy Version: ' | cut -d ':' -f 2 | uniq | xargs)
-#ENV PATH="/ngen/.venv/bin:${PATH}"
-COPY --from=ngen_clone /ngen/ngen/extern/lstm/lstm /ngen/ngen/extern/lstm
-RUN uv pip install --no-cache-dir /ngen/ngen/extern/lstm --extra-index-url https://download.pytorch.org/whl/cpu
-# COPY --from=troute_build /tmp/troute_url /ngen/troute_url
-# COPY --from=ngen_build /tmp/ngen_url /ngen/ngen_url
-RUN echo "export PS1='\u\[\033[01;32m\]@ngiab_dev\[\033[00m\]:\[\033[01;35m\]\W\[\033[00m\]\$ '" >> ~/.bashrc
-
-##################################
-# 2i2c template packages
-##################################
+#FROM restructure_files AS final
+FROM pangeo/pangeo-notebook:2024.04.08 AS final
 
 USER root
-ENV DEBIAN_FRONTEND=noninteractive
-ENV PATH=${NB_PYTHON_PREFIX}/bin:$PATH
 
-# Needed for apt-key to work
-RUN apt-get update -qq --yes > /dev/null && \
-    apt-get install --yes -qq gnupg2 > /dev/null && \
-    rm -rf /var/lib/apt/lists/*
-
-RUN apt-get -y update \
- && apt-get install -y dbus-x11 \
-   firefox \
-   xfce4 \
-   xfce4-panel \
-   xfce4-session \
-   xfce4-settings \
-   xorg \
-   xubuntu-icon-theme \
-   curl \
- && rm -rf /var/lib/apt/lists/*
-
-# Install Node.js and npm
-RUN curl -sL https://deb.nodesource.com/setup_16.x | bash - \
-    && apt-get install -y nodejs
-
-# Install TurboVNC (https://github.com/TurboVNC/turbovnc)
 ARG TURBOVNC_VERSION=2.2.6
-RUN wget -q "https://sourceforge.net/projects/turbovnc/files/${TURBOVNC_VERSION}/turbovnc_${TURBOVNC_VERSION}_amd64.deb/download" -O turbovnc.deb \
+
+# Install runtime-only dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    mpich libnetcdf-dev libhdf5-dev libnetcdf-c++4-dev libudunits2-dev \
+    ### 2i2c: template packages ###
+    gnupg2 dbus-x11 firefox xfce4 xfce4-panel xfce4-session xfce4-settings xorg \
+    xubuntu-icon-theme curl gnupg && \
+    ### 2i2c: Google Cloud SDK (gcloud, gsutil) ###
+    echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] http://packages.cloud.google.com/apt cloud-sdk main" | tee -a /etc/apt/sources.list.d/google-cloud-sdk.list && \
+    curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key --keyring /usr/share/keyrings/cloud.google.gpg  add - && \
+    apt-get update -y && \
+    apt-get install google-cloud-sdk -y --no-install-recommends \
+    ### 2i2c: Nodejs and npm ###
+    && curl -sL https://deb.nodesource.com/setup_16.x | bash - \
+    && apt-get install -y --no-install-recommends nodejs \
+    ### 2i2c: Install TurboVNC (https://github.com/TurboVNC/turbovnc) ###
+    && wget -q "https://sourceforge.net/projects/turbovnc/files/${TURBOVNC_VERSION}/turbovnc_${TURBOVNC_VERSION}_amd64.deb/download" -O turbovnc.deb \
     && apt-get update -qq --yes > /dev/null \
     && apt-get install -y ./turbovnc.deb > /dev/null \
     # remove light-locker to prevent screen lock
@@ -177,6 +132,49 @@ RUN wget -q "https://sourceforge.net/projects/turbovnc/files/${TURBOVNC_VERSION}
     && rm ./turbovnc.deb \
     && ln -s /opt/TurboVNC/bin/* /usr/local/bin/ \
     && rm -rf /var/lib/apt/lists/*
+RUN pip3 install uv
+
+WORKDIR /ngen
+COPY --from=ngen_build /ngen /ngen
+COPY --from=restructure_files /dmod /dmod
+COPY --from=troute_build /ngen/t-route/src/troute-*/dist/*.whl /tmp/
+COPY --from=ngen_clone /ngen/ngen/extern/lstm/lstm /ngen/ngen/extern/lstm
+
+# COPY --from=troute_build /tmp/troute_url /ngen/troute_url
+# COPY --from=ngen_build /tmp/ngen_url /ngen/ngen_url
+
+RUN ln -s /dmod/bin/ngen /usr/local/bin/ngen
+
+ENV FC=gfortran NETCDF=/usr/include PATH=$PATH:/usr/bin/mpich
+
+RUN uv pip install --system --no-cache-dir /tmp/*.whl netCDF4==1.6.3 \
+    numpy==$(/dmod/bin/ngen --info | grep -e 'NumPy Version: ' | cut -d ':' -f 2 | uniq | xargs) \
+    /ngen/ngen/extern/lstm --extra-index-url https://download.pytorch.org/whl/cpu \
+    jupyterlab_vim
+
+RUN rm -rf /tmp/*.whl
+RUN echo "/dmod/shared_libs/" >> /etc/ld.so.conf.d/ngen.conf && ldconfig -v
+
+RUN echo "export PS1='\u\[\033[01;32m\]@ngiab_dev\[\033[00m\]:\[\033[01;35m\]\W\[\033[00m\]\$ '" >> ~/.bashrc
+
+# ##################################
+# # 2i2c template packages
+# ##################################
+
+USER root
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PATH=${NB_PYTHON_PREFIX}/bin:$PATH
+
+# # Install TurboVNC (https://github.com/TurboVNC/turbovnc)
+# ARG TURBOVNC_VERSION=2.2.6
+# RUN wget -q "https://sourceforge.net/projects/turbovnc/files/${TURBOVNC_VERSION}/turbovnc_${TURBOVNC_VERSION}_amd64.deb/download" -O turbovnc.deb \
+#     && apt-get update -qq --yes > /dev/null \
+#     && apt-get install -y ./turbovnc.deb > /dev/null \
+#     # remove light-locker to prevent screen lock
+#     && apt-get remove -y light-locker > /dev/null \
+#     && rm ./turbovnc.deb \
+#     && ln -s /opt/TurboVNC/bin/* /usr/local/bin/ \
+#     && rm -rf /var/lib/apt/lists/*
 
 RUN mamba install -n ${CONDA_ENV} -y websockify
 
@@ -187,61 +185,54 @@ RUN export PATH=${NB_PYTHON_PREFIX}/bin:${PATH} \
           https://github.com/jupyterhub/jupyter-remote-desktop-proxy/archive/main.zip
 
 # Install jupyterlab_vim extension and plugin to download the folder/files
-RUN uv pip install --system jupyterlab_vim
+#RUN uv pip install --system jupyterlab_vim
 #RUN uv pip install --system notebook jupyter-tree-download
-
-# Install Google Cloud SDK (gcloud, gsutil)
-RUN apt-get update && \
-    apt-get install -y curl gnupg && \
-    echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] http://packages.cloud.google.com/apt cloud-sdk main" | tee -a /etc/apt/sources.list.d/google-cloud-sdk.list && \
-    curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key --keyring /usr/share/keyrings/cloud.google.gpg  add - && \
-    apt-get update -y && \
-    apt-get install google-cloud-sdk -y
 
 ########################
 # Issue installing all packages at the same time
 # https://stackoverflow.com/questions/79547588/uv-pip-install-fails-for-multiple-packages
 ########################
-# # Install gis, hydro etc. packages
+# Install gis, hydro etc. packages
+RUN uv pip install --system --no-cache-dir spatialpandas \
+           	   	    		   easydev \
+			    		   colormap \
+			    		   colorcet \
+			    		   duckdb \
+			    		   dask_geopandas \
+			    		   hydrotools \
+			    		   sidecar \
+			    		   dataretrieval \
+			    		   google-cloud-bigquery
 # RUN uv pip install --system spatialpandas \
-#            	   	    easydev \
-# 			    colormap \
-# 			    colorcet \
-# 			    duckdb \
-# 			    dask_geopandas \
-# 			    hydrotools \
-# 			    sidecar \
-# 			    dataretrieval \
-# 			    google-cloud-bigquery
-RUN uv pip install --system spatialpandas
-RUN uv pip install --system easydev
-RUN uv pip install --system colormap
-RUN uv pip install --system colorcet
-RUN uv pip install --system duckdb
-RUN uv pip install --system dask_geopandas
-RUN uv pip install --system hydrotools
-RUN uv pip install --system sidecar
-RUN uv pip install --system dataretrieval
-RUN uv pip install --system google-cloud-bigquery
+#     && uv pip install --system --no-cache-dir easydev \
+#     && uv pip install --system --no-cache-dir colormap \
+#     && uv pip install --system --no-cache-dir colorcet \
+#     && uv pip install --system --no-cache-dir duckdb \
+#     && uv pip install --system --no-cache-dir dask_geopandas \
+#     && uv pip install --system --no-cache-dir hydrotools \
+#     && uv pip install --system --no-cache-dir sidecar \
+#     && uv pip install --system --no-cache-dir dataretrieval \
+#     && uv pip install --system --no-cache-dir google-cloud-bigquery
 
 # Upgrade colorama to resolve dependency conflict
 RUN uv pip install --system --upgrade colorama
 
 # Install nb_black separately to address metadata generation issue
-RUN uv pip install --system nb_black==1.0.5
+RUN uv pip install --system --no-cache-dir nb_black==1.0.5
 
-# # Install nbfetch for hydroshare
-# RUN pip install -U --no-cache-dir --upgrade-strategy only-if-needed git+https://github.com/hydroshare/nbfetch.git@hspuller-auth
-# # enable jupyter_server extension
-# RUN jupyter server extension enable --py nbfetch --sys-prefix
-
-RUN uv pip install --system dask_labextension
+# Install nbfetch for hydroshare
+RUN uv pip install --system --no-cache-dir git+https://github.com/hydroshare/nbfetch.git@hspuller-auth \
+    dask_labextension
+# enable jupyter_server extension
+RUN jupyter server extension enable --py nbfetch --sys-prefix
 
 # Update custom Jupyter Lab settings
 RUN sed -i 's/\"default\": true/\"default\": false/g' /srv/conda/envs/notebook/share/jupyter/labextensions/@axlair/jupyterlab_vim/schemas/@axlair/jupyterlab_vim/plugin.json
 
 # Downgrade pydantic to avoid issues with ngen is not compatible with pydantic2
-RUN uv pip install --system 'pydantic<2'
+RUN uv pip install --system --no-cache-dir 'pydantic<2' \
+    ### Setup and install ngiab_data_preprocess module to allow preparing data for ngiab ###
+    ngiab_data_preprocess==4.1.0
 
 # To avoid error for ngen-parallel
 ENV RDMAV_FORK_SAFE=1
@@ -252,29 +243,29 @@ ENV RDMAV_FORK_SAFE=1
 ##################################
 
 # Setup and install ngiab_data_preprocess module to allow preparing data for ngiab
-RUN uv pip install --system ngiab_data_preprocess==4.1.0
-RUN uv run python -c "from data_sources.source_validation import download_and_update_hf; download_and_update_hf();"
+# RUN uv pip install --system ngiab_data_preprocess==4.1.0
+# RUN uv run python -c "from data_sources.source_validation import download_and_update_hf; download_and_update_hf();"
 
 # Update permissions to make '.ngiab' available to Jupyter non-root user
-RUN chown -R ${NB_USER}:${NB_USER} /home/jovyan/.ngiab/
+# RUN chown -R ${NB_USER}:${NB_USER} /home/jovyan/.ngiab/
 
-##########
-# Teehr (https://github.com/arpita0911patel/ngiab-teehr/tree/main)
-##########
-WORKDIR /ngen/teehr
+# ##########
+# # Teehr (https://github.com/arpita0911patel/ngiab-teehr/tree/main)
+# ##########
+# WORKDIR /ngen/teehr
 
-RUN apt-get update && apt-get install -y git openjdk-11-jdk
+# RUN apt-get update && apt-get install -y git openjdk-11-jdk
 
-ENV JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
-ENV PATH=$PATH:$JAVA_HOME/bin
+# ENV JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
+# ENV PATH=$PATH:$JAVA_HOME/bin
 
-RUN git clone https://github.com/arpita0911patel/ngiab-teehr.git
+# RUN git clone https://github.com/arpita0911patel/ngiab-teehr.git
 
-RUN pip install uv
-RUN uv pip install --system --no-cache-dir -r ngiab-teehr/requirements.txt
+# RUN pip install uv
+# RUN uv pip install --system --no-cache-dir -r ngiab-teehr/requirements.txt
 
-RUN cp -r ngiab-teehr/scripts/* . \
-    && rm -r ngiab-teehr
+# RUN cp -r ngiab-teehr/scripts/* . \
+#     && rm -r ngiab-teehr
 
 # Update permissions to allow Jupyter non-root user to install packages
 RUN chown -R ${NB_USER}:${NB_USER} /home/jovyan/.cache/
