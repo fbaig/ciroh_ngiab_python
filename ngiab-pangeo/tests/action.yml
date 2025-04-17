@@ -4,4 +4,4 @@ description: 'Test NGIAB 2i2c image and Python Wrapper'
 runs:
   using: 'docker'
   image: '../Dockerfile'
-  entrypoint: 'python /tests/tests.py -v'
+  entrypoint: '/srv/conda/envs/notebook/bin/python /tests/tests.py -v'
