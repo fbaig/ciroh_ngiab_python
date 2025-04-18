@@ -205,23 +205,14 @@ RUN sed -i 's/\"default\": true/\"default\": false/g' /srv/conda/envs/notebook/s
 RUN uv pip install --system --no-cache-dir 'pydantic<2' \
     #---------------------------------------------
     # Setup and install ngiab_data_preprocess module to allow preparing data for ngiab
+    # Download hydrofabric and update permissions to make '.ngiab' available to non-root user
     #---------------------------------------------
-    ngiab_data_preprocess==4.1.0
+    ngiab_data_preprocess==4.2.* \
+    # && uv run python -c "from data_sources.source_validation import download_and_update_hf; download_and_update_hf();" \
+    # && chown -R ${NB_USER}:${NB_USER} /home/jovyan/.ngiab/
 
 # To avoid error for ngen-parallel
 ENV RDMAV_FORK_SAFE=1
-
-##################################
-# ngiab extra stuff
-# move before 2i2c packages once tested
-##################################
-
-# Setup and install ngiab_data_preprocess module to allow preparing data for ngiab
-# RUN uv pip install --system ngiab_data_preprocess==4.1.0
-# RUN uv run python -c "from data_sources.source_validation import download_and_update_hf; download_and_update_hf();"
-
-# Update permissions to make '.ngiab' available to Jupyter non-root user
-# RUN chown -R ${NB_USER}:${NB_USER} /home/jovyan/.ngiab/
 
 # ##########
 # # Teehr (https://github.com/arpita0911patel/ngiab-teehr/tree/main)
