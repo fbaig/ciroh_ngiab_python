@@ -247,8 +247,10 @@ RUN chown -R ${NB_USER}:${NB_USER} /home/jovyan/.cache/
 
 WORKDIR /ngen/
 USER ${NB_USER}
-
 COPY ./tests /tests
+USER root
+RUN chmod +x /tests/test-entrypoint.sh
 
+USER ${NB_USER}
 # # Download hydrofabric when starting container
 # ENTRYPOINT uv run python -c "from data_sources.source_validation import download_and_update_hf; download_and_update_hf();"
