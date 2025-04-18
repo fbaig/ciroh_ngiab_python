@@ -4,7 +4,7 @@ import subprocess
 import multiprocessing
 from pathlib import Path
 
-class NGIAB:
+class PyNGIAB:
     def __init__(self,
                  data_dir: str,
                  serial_execution_mode: bool = False):
