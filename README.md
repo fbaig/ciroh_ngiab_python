@@ -36,15 +36,18 @@ docker run -it \
  - `test_ngiab.py` has code showing usage of the python wrapper module
     - The same can be done in a Jupyter environment launched with all NGIAB dependencies
 ```python
-from ngiab import NGIAB
+import sys
+sys.path.append('/ngen/pyngiab')        
+from pyngiab import PyNGIAB
+
 data_dir = './AWI_16_2863657_007'
 
 # default parallel execution of the model with all available cores
-test_ngiab = NGIAB(data_dir)
+test_ngiab = PyNGIAB(data_dir)
 test_ngiab.run()
 
 # serial execution of the model
-test_ngiab_serial = NGIAB(data_dir, serial_execution_mode=True)
+test_ngiab_serial = PyNGIAB(data_dir, serial_execution_mode=True)
 test_ngiab_serial.run()
 ```
 
