@@ -10,5 +10,5 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: NGIAB Tests step
-        uses: ./ngiab-pangeo/tests # Uses an action in the tests directory
+        uses: ./tests # Uses an action in the tests directory
         id: ngiab-tests

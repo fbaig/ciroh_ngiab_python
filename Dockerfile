@@ -207,12 +207,12 @@ RUN uv pip install --system --no-cache-dir 'pydantic<2' \
     # Setup and install ngiab_data_preprocess module to allow preparing data for ngiab
     # Download hydrofabric and update permissions to make '.ngiab' available to non-root user
     #---------------------------------------------
-    ngiab_data_preprocess==4.2.* \
-    # && uv run python -c "from data_sources.source_validation import download_and_update_hf; download_and_update_hf();" \
-    # && chown -R ${NB_USER}:${NB_USER} /home/jovyan/.ngiab/
+    ngiab_data_preprocess==4.2.*
+    # && uv run python -c "from data_sources.source_validation import download_and_update_hf; download_and_update_hf();"
 
 # To avoid error for ngen-parallel
 ENV RDMAV_FORK_SAFE=1
+
 
 # ##########
 # # Teehr (https://github.com/arpita0911patel/ngiab-teehr/tree/main)
@@ -232,15 +232,25 @@ ENV RDMAV_FORK_SAFE=1
 # RUN cp -r ngiab-teehr/scripts/* . \
 #     && rm -r ngiab-teehr
 
-# Update permissions to allow Jupyter non-root user to install packages
-RUN chown -R ${NB_USER}:${NB_USER} /home/jovyan/.cache/
-# RUN chown -R ${NB_USER}:${NB_USER} /srv/conda/
+##########
+# PyNGIAB (https://github.com/fbaig/ciroh_pyngiab)
+##########
+#USER ${NB_USER}
+#COPY ./pyngiab /ngen/pyngiab
+ADD https://raw.githubusercontent.com/fbaig/ciroh_pyngiab/refs/heads/main/ngiab.py /ngen/pyngiab/pyngiab.py
 
 WORKDIR /ngen/
 USER ${NB_USER}
 COPY ./tests /tests
+
 USER root
-RUN chmod +x /tests/test-entrypoint.sh
+# Update permissions to allow Jupyter non-root user to install and use packages
+RUN chown -R ${NB_USER}:${NB_USER} /home/jovyan/.cache/ \
+    /tests/ \
+    /ngen/pyngiab \
+    #/home/jovyan/.ngiab/ \
+    #/srv/conda/ \
+    && chmod +x /tests/test-entrypoint.sh
 
 USER ${NB_USER}
 # # Download hydrofabric when starting container

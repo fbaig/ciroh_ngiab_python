@@ -13,8 +13,6 @@ class TestJupyter(unittest.TestCase):
         self.assertIn('jupyterlab       : 4.4.0', result.stdout)
         pass
 
-    def __del__(self):
-        print('cleanup ...')
     pass
 
 class TestNGIAB(unittest.TestCase):
@@ -70,10 +68,22 @@ class TestNGIAB(unittest.TestCase):
         #self.assertIn('features from layer divides using ID column', result.stdout)
         self.assertIn('/dmod/bin/partitionGenerator <catchment_data_path> <nexus_data_path> <partition_output_name> <number of partitions> <catchment_subset_ids> <nexus_subset_ids>', result.stdout)
         pass
-    
+
     def test_ngiab_run(self):
         #self.assertEqual(add(-1, -2), -3)
         pass
+
+
+class TestPyNGIAB(unittest.TestCase):
+    def test_ngiab_python_serial(self):
+        import sys
+        sys.path.append('/ngen/pyngiab')        
+        from pyngiab import PyNGIAB
+        
+        data_dir = '/tests/cat-2861474'
+        test_ngiab = PyNGIAB(data_dir, serial_execution_mode=True)
+        test_ngiab.run()
+        self.assertEqual(0, 0)
     
 class TestTeehr(unittest.TestCase):
     pass
@@ -82,4 +92,19 @@ class TestNGIABDataPreprocess(unittest.TestCase):
     pass
 
 if __name__ == '__main__':
-    unittest.main()
+    ''' extract sample dataset '''
+    import zipfile
+    with zipfile.ZipFile('/tests/cat-2861474.zip', 'r') as zip_ref:
+        zip_ref.extractall('/tests/')
+        pass
+
+    unittest.main(exit=False)
+    #unittest.main(TestPyNGIAB(), exit=False)
+
+    ''' Cleanup '''
+    from pathlib import Path
+    import shutil
+
+    dirpath = Path('/tests/cat-2861474')
+    if dirpath.exists() and dirpath.is_dir():
+        shutil.rmtree(dirpath)

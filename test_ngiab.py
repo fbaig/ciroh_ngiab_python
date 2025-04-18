@@ -1,4 +1,4 @@
-from ngiab import NGIAB
+from pyngiab import PyNGIAB
 
 if __name__ == "__main__":
 
@@ -7,7 +7,7 @@ if __name__ == "__main__":
 
     print('Running Python wrapper for NGIAB ...')
 
-    #test_ngiab = NGIAB(data_dir, serial_execution_mode=True)
-    test_ngiab = NGIAB(data_dir)
+    #test_ngiab = PyNGIAB(data_dir, serial_execution_mode=True)
+    test_ngiab = PyNGIAB(data_dir)
     test_ngiab.run()
     pass
