@@ -183,8 +183,6 @@ RUN pip3 install uv && \
 RUN rm -rf /tmp/*.whl
 RUN echo "/dmod/shared_libs/" >> /etc/ld.so.conf.d/ngen.conf && ldconfig -v
 
-RUN echo "export PS1='\u\[\033[01;32m\]@ngiab_dev\[\033[00m\]:\[\033[01;35m\]\W\[\033[00m\]\$ '" >> ~/.bashrc
-
 # Upgrade colorama to resolve dependency conflict
 RUN uv pip install --system --upgrade colorama
 
@@ -200,7 +198,7 @@ RUN uv pip install --system --no-cache-dir 'pydantic<2' \
     ngiab_data_preprocess==4.2.*
     # && uv run python -c "from data_sources.source_validation import download_and_update_hf; download_and_update_hf();"
 
-# Install nbfetch for hydroshare
+# Install nbfetch for hydroshare compatible with pydantic1
 RUN uv pip install --system --no-cache-dir \
     git+https://github.com/hydroshare/nbfetch.git@hspuller-auth \
     dask_labextension
@@ -253,5 +251,6 @@ RUN chown -R ${NB_USER}:${NB_USER} /home/jovyan/.cache/ \
     && chmod +x /tests/test-entrypoint.sh
 
 USER ${NB_USER}
+RUN echo "export PS1='\u\[\033[01;32m\]@ngiab_dev\[\033[00m\]:\[\033[01;35m\]\W\[\033[00m\]\$ '" >> ~/.bashrc
 # # Download hydrofabric when starting container
 # ENTRYPOINT uv run python -c "from data_sources.source_validation import download_and_update_hf; download_and_update_hf();"
