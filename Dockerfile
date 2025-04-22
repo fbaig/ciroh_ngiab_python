@@ -191,16 +191,6 @@ RUN uv pip install --system --upgrade colorama
 # Install nb_black separately to address metadata generation issue
 RUN uv pip install --system --no-cache-dir nb_black==1.0.5
 
-# Install nbfetch for hydroshare
-RUN uv pip install --system --no-cache-dir \
-    #git+https://github.com/hydroshare/nbfetch.git@hspuller-auth \
-    dask_labextension
-# enable jupyter_server extension
-#RUN jupyter server extension enable --py nbfetch --sys-prefix
-
-# Update custom Jupyter Lab settings
-RUN sed -i 's/\"default\": true/\"default\": false/g' /srv/conda/envs/notebook/share/jupyter/labextensions/@axlair/jupyterlab_vim/schemas/@axlair/jupyterlab_vim/plugin.json
-
 # Downgrade pydantic to avoid issues with ngen is not compatible with pydantic2
 RUN uv pip install --system --no-cache-dir 'pydantic<2' \
     #---------------------------------------------
@@ -209,6 +199,16 @@ RUN uv pip install --system --no-cache-dir 'pydantic<2' \
     #---------------------------------------------
     ngiab_data_preprocess==4.2.*
     # && uv run python -c "from data_sources.source_validation import download_and_update_hf; download_and_update_hf();"
+
+# Install nbfetch for hydroshare
+RUN uv pip install --system --no-cache-dir \
+    git+https://github.com/hydroshare/nbfetch.git@hspuller-auth \
+    dask_labextension
+# enable jupyter_server extension
+RUN jupyter server extension enable --py nbfetch --sys-prefix
+
+# Update custom Jupyter Lab settings
+RUN sed -i 's/\"default\": true/\"default\": false/g' /srv/conda/envs/notebook/share/jupyter/labextensions/@axlair/jupyterlab_vim/schemas/@axlair/jupyterlab_vim/plugin.json
 
 # To avoid error for ngen-parallel
 ENV RDMAV_FORK_SAFE=1
