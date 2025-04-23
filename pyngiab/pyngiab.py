@@ -77,7 +77,7 @@ class PyNGIAB:
             print(f'NBIAB partitioning failed with status {e.returncode}.')
         return None
 
-    def run(self):
+    def run(self) -> bool:
         if not self._validate_inputs(): return
 
         ''' NextGen model utility expect to run in data directory '''
@@ -125,14 +125,14 @@ class PyNGIAB:
             # execute NGIAB model
             result = subprocess.run(run_cmd, check=True)
             print('NGIAB executed successfully ...')
-            return
+            return True
         except Exception as e:
             print(f'NGIAB failed to run: {e}')
+            return False
         finally:
             # change directory back to working directory
             os.chdir(cwd)
-
-        pass
+        return False
     pass
 
 # '''

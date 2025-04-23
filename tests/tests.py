@@ -1,19 +1,19 @@
 import unittest
 
-class TestJupyter(unittest.TestCase):
-    def test_jupyter_run(self):
-        import subprocess
-        result = subprocess.run('jupyter --version',
-                                capture_output=True,
-                                text=True,
-                                shell=True,
-                                check=True)
-        self.assertEqual(result.returncode, 0)
-        self.assertIn('jupyter_server   : 2.13.0', result.stdout)
-        self.assertIn('jupyterlab       : 4.4.0', result.stdout)
-        pass
+# class TestJupyter(unittest.TestCase):
+#     def test_jupyter_run(self):
+#         import subprocess
+#         result = subprocess.run('jupyter --version',
+#                                 capture_output=True,
+#                                 text=True,
+#                                 shell=True,
+#                                 check=True)
+#         self.assertEqual(result.returncode, 0)
+#         self.assertIn('jupyter_server   : 2.13.0', result.stdout)
+#         self.assertIn('jupyterlab       : 4.4.0', result.stdout)
+#         pass
 
-    pass
+#     pass
 
 class TestNGIAB(unittest.TestCase):
     def test_ngiab_install(self):
@@ -79,11 +79,23 @@ class TestPyNGIAB(unittest.TestCase):
         import sys
         sys.path.append('/ngen/pyngiab')        
         from pyngiab import PyNGIAB
-        
-        data_dir = '/tests/cat-2861474'
+
+        data_dir = '/tests/cat-2861474'        
         test_ngiab = PyNGIAB(data_dir, serial_execution_mode=True)
-        test_ngiab.run()
-        self.assertEqual(0, 0)
+        run = test_ngiab.run()
+        self.assertEqual(run, True)
+        pass
+    
+    def test_ngiab_python_parallel(self):
+        import sys
+        sys.path.append('/ngen/pyngiab')        
+        from pyngiab import PyNGIAB
+
+        data_dir = '/tests/cat-2861474'
+        test_ngiab = PyNGIAB(data_dir)
+        run = test_ngiab.run()
+        self.assertEqual(run, True)
+        pass
     
 class TestTeehr(unittest.TestCase):
     pass

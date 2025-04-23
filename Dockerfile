@@ -178,7 +178,11 @@ RUN pip3 install uv && \
     # 2i2c: To enable linux desktop
     #---------------------------------------------
     jupyter-remote-desktop-proxy \
-    websockify
+    websockify \
+    #---------------------------------------------
+    # 2i2c: To enable venv kernels in Jupyter
+    #---------------------------------------------
+    ipykernel
 
 RUN rm -rf /tmp/*.whl
 RUN echo "/dmod/shared_libs/" >> /etc/ld.so.conf.d/ngen.conf && ldconfig -v
@@ -189,15 +193,6 @@ RUN uv pip install --system --upgrade colorama
 # Install nb_black separately to address metadata generation issue
 RUN uv pip install --system --no-cache-dir nb_black==1.0.5
 
-# Downgrade pydantic to avoid issues with ngen is not compatible with pydantic2
-RUN uv pip install --system --no-cache-dir 'pydantic<2' \
-    #---------------------------------------------
-    # Setup and install ngiab_data_preprocess module to allow preparing data for ngiab
-    # Download hydrofabric and update permissions to make '.ngiab' available to non-root user
-    #---------------------------------------------
-    ngiab_data_preprocess==4.2.*
-    # && uv run python -c "from data_sources.source_validation import download_and_update_hf; download_and_update_hf();"
-
 # Install nbfetch for hydroshare compatible with pydantic1
 RUN uv pip install --system --no-cache-dir \
     git+https://github.com/hydroshare/nbfetch.git@hspuller-auth \
@@ -207,6 +202,25 @@ RUN jupyter server extension enable --py nbfetch --sys-prefix
 
 # Update custom Jupyter Lab settings
 RUN sed -i 's/\"default\": true/\"default\": false/g' /srv/conda/envs/notebook/share/jupyter/labextensions/@axlair/jupyterlab_vim/schemas/@axlair/jupyterlab_vim/plugin.json
+
+##########
+# For ngiab, create a separate venv usable as kernel in JupyterHub
+# Downgrade pydantic and numpy to avoid issues with ngen
+##########
+RUN uv venv --system-site-packages \
+    && uv pip install --no-cache-dir 'pydantic<2' \
+    numpy==$(/dmod/bin/ngen --info | grep -e 'NumPy Version: ' | cut -d ':' -f 2 | uniq | xargs) \
+    # && uv pip install --system --no-cache-dir 'pydantic<2' \
+    #---------------------------------------------
+    # Setup and install ngiab_data_preprocess module to allow preparing data for ngiab
+    # Download hydrofabric and update permissions to make '.ngiab' available to non-root user
+    #---------------------------------------------
+    ngiab_data_preprocess==4.2.*
+    # && uv run python -c "from data_sources.source_validation import download_and_update_hf; download_and_update_hf();"
+
+# Make this venv available as JupyterHub kernel
+ENV PATH=/ngen/.venv/bin:$PATH
+RUN python -m ipykernel install --user --name=NGIAB
 
 # To avoid error for ngen-parallel
 ENV RDMAV_FORK_SAFE=1
@@ -243,7 +257,8 @@ COPY ./tests /tests
 
 USER root
 # Update permissions to allow Jupyter non-root user to install and use packages
-RUN chown -R ${NB_USER}:${NB_USER} /home/jovyan/.cache/ \
+RUN chown -R ${NB_USER}:${NB_USER} \
+    /home/jovyan/ \
     /tests/ \
     /ngen/pyngiab \
     #/home/jovyan/.ngiab/ \
