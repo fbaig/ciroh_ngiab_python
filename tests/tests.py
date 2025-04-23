@@ -15,6 +15,8 @@ import unittest
 
 #     pass
 
+test_data = '/tests/cat-7080'
+
 class TestNGIAB(unittest.TestCase):
     def test_ngiab_install(self):
         import subprocess
@@ -80,7 +82,7 @@ class TestPyNGIAB(unittest.TestCase):
         sys.path.append('/ngen/pyngiab')        
         from pyngiab import PyNGIAB
 
-        data_dir = '/tests/cat-2861474'        
+        data_dir = test_data        
         test_ngiab = PyNGIAB(data_dir, serial_execution_mode=True)
         run = test_ngiab.run()
         self.assertEqual(run, True)
@@ -91,7 +93,7 @@ class TestPyNGIAB(unittest.TestCase):
         sys.path.append('/ngen/pyngiab')        
         from pyngiab import PyNGIAB
 
-        data_dir = '/tests/cat-2861474'
+        data_dir = test_data
         test_ngiab = PyNGIAB(data_dir)
         run = test_ngiab.run()
         self.assertEqual(run, True)
@@ -106,7 +108,7 @@ class TestNGIABDataPreprocess(unittest.TestCase):
 if __name__ == '__main__':
     ''' extract sample dataset '''
     import zipfile
-    with zipfile.ZipFile('/tests/cat-2861474.zip', 'r') as zip_ref:
+    with zipfile.ZipFile(f'{test_data}.zip', 'r') as zip_ref:
         zip_ref.extractall('/tests/')
         pass
 
@@ -117,6 +119,6 @@ if __name__ == '__main__':
     from pathlib import Path
     import shutil
 
-    dirpath = Path('/tests/cat-2861474')
+    dirpath = Path(test_data)
     if dirpath.exists() and dirpath.is_dir():
         shutil.rmtree(dirpath)

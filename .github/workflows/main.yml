@@ -1,4 +1,8 @@
-on:  [push, workflow_dispatch]
+#on:  [push, workflow_dispatch]
+on:
+  push:
+    branches-ignore:
+      - master
 name: NGIAB Tests
 jobs:
   hello_world_job:
