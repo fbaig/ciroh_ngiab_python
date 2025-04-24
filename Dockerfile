@@ -220,7 +220,8 @@ RUN uv venv --system-site-packages \
 
 # Make this venv available as JupyterHub kernel
 ENV PATH=/ngen/.venv/bin:$PATH
-RUN python -m ipykernel install --user --name=NGIAB
+RUN python -m ipykernel install --name=ngiab-pydantic1
+#RUN python -m ipykernel install --user --name=NGIAB
 
 # To avoid error for ngen-parallel
 ENV RDMAV_FORK_SAFE=1
