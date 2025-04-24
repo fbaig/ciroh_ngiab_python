@@ -178,11 +178,11 @@ RUN pip3 install uv && \
     # 2i2c: To enable linux desktop
     #---------------------------------------------
     jupyter-remote-desktop-proxy \
-    websockify \
+    websockify
     #---------------------------------------------
     # 2i2c: To enable venv kernels in Jupyter
     #---------------------------------------------
-    ipykernel
+    #ipykernel
 
 RUN rm -rf /tmp/*.whl
 RUN echo "/dmod/shared_libs/" >> /etc/ld.so.conf.d/ngen.conf && ldconfig -v
@@ -204,8 +204,12 @@ RUN jupyter server extension enable --py nbfetch --sys-prefix
 RUN sed -i 's/\"default\": true/\"default\": false/g' /srv/conda/envs/notebook/share/jupyter/labextensions/@axlair/jupyterlab_vim/schemas/@axlair/jupyterlab_vim/plugin.json
 
 ##########
-# For ngiab, create a separate venv usable as kernel in JupyterHub
-# Downgrade pydantic and numpy to avoid issues with ngen
+# While creating a venv inside docker is not a good idea, some packages required
+# by 2i2c and hydroshare (nbfetch) require pydantic>1 and numpy latest version.
+# At the same time, the routing module of ngen is built with pydantic1 and a
+# specific version of numpy.
+# In order for ngen to work with 2i2c and hydroshare packages, conflicting packages
+# are installed in a venv which will be referenced by the PyNGIAB package
 ##########
 RUN uv venv --system-site-packages \
     && uv pip install --no-cache-dir 'pydantic<2' \
@@ -219,9 +223,9 @@ RUN uv venv --system-site-packages \
     # && uv run python -c "from data_sources.source_validation import download_and_update_hf; download_and_update_hf();"
 
 # Make this venv available as JupyterHub kernel
-ENV PATH=/ngen/.venv/bin:$PATH
-RUN python -m ipykernel install --name=ngiab-pydantic1
-#RUN python -m ipykernel install --user --name=NGIAB
+# ENV PATH=/ngen/.venv/bin:$PATH
+# RUN python -m ipykernel install --name=ngiab-pydantic1
+# #RUN python -m ipykernel install --user --name=NGIAB
 
 # To avoid error for ngen-parallel
 ENV RDMAV_FORK_SAFE=1
