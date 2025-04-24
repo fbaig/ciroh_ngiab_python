@@ -1,4 +1,4 @@
-# Python Wrapper for NextGen In A Box (NGIAB) in Jupyter
+# Python Wrapper for NextGen In A Box (NGIAB)
 Python wrapper for [NGIAB](https://github.com/CIROH-UA/NGIAB-CloudInfra/tree/main)'s shell scripts. This will facilitate NGIAB invocation directly from Jupyter environment without the need to execute terminal commands.
 
 This wrapper requires NGIAB already setup so should be tested and run inside NGIAB docker or natively setup NGIAB.
@@ -8,7 +8,8 @@ Most JupyterHub environments are Ubuntu based whereas NGIAB is built on `rockyli
 ## Getting Started
 
 ### Sample Data
- - Follow "Quick Start Guide" from [NGIAB](https://github.com/CIROH-UA/NGIAB-CloudInfra/tree/main) to get sample data
+ - Sample data is available in `/tests/` directory
+ - Alternatively, you can also follow "Quick Start Guide" from [NGIAB](https://github.com/CIROH-UA/NGIAB-CloudInfra/tree/main) to get sample data
 
 ### Generate Data Using [`ngiab_data_preprocess`](https://github.com/CIROH-UA/NGIAB_data_preprocess/tree/main) utility
 The utility is part of the docker image and can be executed to download and generate input data for the NGIAB model.
@@ -31,10 +32,12 @@ docker run -it \
        jupyter lab --ip 0.0.0.0 /shared
 ```
 
-### NGIAB Pyhton Wrapper
- - `ngiab.py` has the python wrapper code with can imported as a python module
+## NGIAB Pyhton Wrapper
+ - `pyngiab/pyngiab.py` has the python wrapper code which can imported as a python module
  - `test_ngiab.py` has code showing usage of the python wrapper module
-    - The same can be done in a Jupyter environment launched with all NGIAB dependencies
+    - Make sure to load appropriate dependencies by running the python script as
+`source /ngen/.venv/bin/activate && python test_ngiab.py`
+ - Alternatively, in Jupyter environment, make sure to use `NGIAB` kernel to load appropriate dependencies
 ```python
 import sys
 sys.path.append('/ngen/pyngiab')        

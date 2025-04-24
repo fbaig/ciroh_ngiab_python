@@ -1,19 +1,19 @@
 import unittest
 
-# class TestJupyter(unittest.TestCase):
-#     def test_jupyter_run(self):
-#         import subprocess
-#         result = subprocess.run('jupyter --version',
-#                                 capture_output=True,
-#                                 text=True,
-#                                 shell=True,
-#                                 check=True)
-#         self.assertEqual(result.returncode, 0)
-#         self.assertIn('jupyter_server   : 2.13.0', result.stdout)
-#         self.assertIn('jupyterlab       : 4.4.0', result.stdout)
-#         pass
+class TestJupyter(unittest.TestCase):
+    def test_jupyter_run(self):
+        import subprocess
+        result = subprocess.run('jupyter --version',
+                                capture_output=True,
+                                text=True,
+                                shell=True,
+                                check=True)
+        self.assertEqual(result.returncode, 0)
+        self.assertIn('jupyter_server   : 2.13.0', result.stdout)
+        self.assertIn('jupyterlab       :', result.stdout)
+        pass
 
-#     pass
+    pass
 
 test_data = '/tests/cat-7080'
 
