@@ -1,0 +1,18 @@
+#on:  [push, workflow_dispatch]
+on:
+  push:
+    branches-ignore:
+      - master
+name: NGIAB Tests
+jobs:
+  hello_world_job:
+    runs-on: ubuntu-latest
+    name: A job to Test NGIAB image and python wrapper
+    steps:
+      # To use this repository's private action,
+      # you must check out the repository
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: NGIAB Tests step
+        uses: ./tests # Uses an action in the tests directory
+        id: ngiab-tests
