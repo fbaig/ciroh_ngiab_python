@@ -6,6 +6,10 @@ This wrapper requires NGIAB already setup so should be tested and run inside NGI
 Most JupyterHub environments are Ubuntu based whereas NGIAB is built on `rockylinux9` as base image. The repository also contains scripts to create modified versions of NGIAB compatible with Jupyter based on `pangeo/pangeo-notebook` image.
 
 ## Getting Started
+### Install
+```bash
+pip install git+https://github.com/fbaig/ciroh_pyngiab.git@pypi
+```
 
 ### Sample Data
  - Sample data is available in `/tests/` directory
@@ -39,8 +43,6 @@ docker run -it \
 `source /ngen/.venv/bin/activate && python test_ngiab.py`
  - Alternatively, in Jupyter environment, make sure to use `NGIAB` kernel to load appropriate dependencies
 ```python
-import sys
-sys.path.append('/ngen/pyngiab')        
 from pyngiab import PyNGIAB
 
 data_dir = './AWI_16_2863657_007'

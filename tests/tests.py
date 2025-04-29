@@ -77,32 +77,52 @@ class TestNGIAB(unittest.TestCase):
 
 
 class TestPyNGIAB(unittest.TestCase):
-    def test_ngiab_python_serial(self):
-        import sys
-        sys.path.append('/ngen/pyngiab')        
-        from pyngiab import PyNGIAB
-
-        data_dir = test_data        
-        test_ngiab = PyNGIAB(data_dir, serial_execution_mode=True)
-        run = test_ngiab.run()
-        self.assertEqual(run, True)
-        pass
-    
-    def test_ngiab_python_parallel(self):
-        import sys
-        sys.path.append('/ngen/pyngiab')        
+    def test_pyngiab_serial(self):
+        # import sys
+        # sys.path.append('/ngen/pyngiab')
         from pyngiab import PyNGIAB
 
         data_dir = test_data
-        test_ngiab = PyNGIAB(data_dir)
-        run = test_ngiab.run()
+        try:
+            test_ngiab = PyNGIAB(data_dir, serial_execution_mode=True)
+            run = test_ngiab.run()
+        except:
+            run = False
         self.assertEqual(run, True)
         pass
-    
+
+    def test_pyngiab_parallel(self):
+        # import sys
+        # sys.path.append('/ngen/pyngiab')
+        from pyngiab import PyNGIAB
+
+        data_dir = test_data
+        try:
+            test_ngiab = PyNGIAB(data_dir)
+            run = test_ngiab.run()
+        except:
+            run = False
+        self.assertEqual(run, True)
+        pass
+
 class TestTeehr(unittest.TestCase):
     pass
 
 class TestNGIABDataPreprocess(unittest.TestCase):
+    def test_pyngiab_datapreprocess(self):
+        # import sys
+        # sys.path.append('/shared/pyngiab')
+        from pyngiab import PyNGIABDataPreprocess
+        try:
+            p = PyNGIABDataPreprocess('cat-7080') \
+                .subset() \
+                .generate_forcings('2022-01-01', '2022-01-28') \
+                .generate_realization() \
+                .run()
+        except:
+            p = False
+        self.assertEqual(p, True)
+        pass
     pass
 
 if __name__ == '__main__':
@@ -114,6 +134,7 @@ if __name__ == '__main__':
 
     unittest.main(exit=False)
     #unittest.main(TestPyNGIAB(), exit=False)
+    #unittest.main(TestNGIABDataPreprocess(), exit=False)
 
     ''' Cleanup '''
     from pathlib import Path

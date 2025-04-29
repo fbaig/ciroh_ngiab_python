@@ -15,7 +15,7 @@ class PyNGIAB:
         self._ngen_env = os.environ.copy()
         if not self._check_dependencies(venv_path):
             raise ModuleNotFoundError(f"Appropriate package versions required for 'ngen' not found. Possible fix is to create virtual environment with appropriate packages and pass virtual environment directory as an argument to initialize 'PyNGIAB' class e.g. `uv venv && uv pip install 'pydantic<2' and numpy={self._ngen_numpy_version}` and then `PyNGIAB(<data_dir>, venv_path=<path_to_venv>)`")
-        
+
         self._data_dir = data_dir
         self._serial_execution_mode = serial_execution_mode
         self._cpu_count = multiprocessing.cpu_count()
@@ -45,7 +45,7 @@ class PyNGIAB:
                     return True
                 pass
         return False
-        
+
     def _validate_dependency_versions(self, curr_env) -> bool:
         '''
         Subprocess enviornment can differ from python environment. Make sure appropriate
@@ -185,47 +185,4 @@ class PyNGIAB:
             os.chdir(cwd)
         return False
     pass
-
-# '''
-# Most of the code is copied from the following repository
-# Original Author: Josh Cunningham
-# Reference: https://github.com/CIROH-UA/NGIAB_data_preprocess/
-# '''
-# class NGIABDataPreprocess:
-#     from data_processing.forcings import create_forcings
-#     from data_processing.create_realization import create_realization, create_em_realization
-#     from data_processing.datasets import load_aorc_zarr, load_v3_retrospective_zarr
-#     from data_processing.dataset_utils import save_and_clip_dataset
-
-#     def __init__(self,
-#                  data_dir: str,
-#                  serial_execution_mode: bool = False):
-
-#         pass
-
-#     '''
-
-#     '''
-#     def subset(input_feature: list[str],
-#                latlon: str=None,
-#                gage: str=None,
-#                ):
-#         input_feature = input_feature.replace('_', '-')
-#         if len(input_feature.split('-')) > 1:
-#         prefix = input_feature.split('-')[0]
-#         if prefix.lower() == 'gage':
-#             args.gage = True
-#         elif prefix.lower() == 'wb':
-#             logging.warning('Waterbody IDs are no longer supported!')
-#             logging.warning(f'Automatically converting {input_feature} to catid')
-#             time.sleep(2)
-
-#         from data_processing.subset import subset
-#         subset(feature_to_subset, output_gpkg_path=paths.geopackage_path)
-#         pass
-
-#     def subset_vpu():
-#         from data_processing.subset import subset_vpu
-#         subset_vpu(args.vpu, output_gpkg_path=paths.geopackage_path)
-#         logging.info("Subsetting complete.")
-#         pass
+##############################################################
