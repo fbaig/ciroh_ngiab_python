@@ -264,7 +264,6 @@ USER root
 RUN chown -R ${NB_USER}:${NB_USER} \
     /home/jovyan/ \
     /tests/ \
-    /ngen/pyngiab \
     #/home/jovyan/.ngiab/ \
     #/srv/conda/ \
     && chmod +x /tests/test-entrypoint.sh
