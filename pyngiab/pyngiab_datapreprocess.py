@@ -73,6 +73,8 @@ class PyNGIABDataPreprocess:
 
         print(f'Running command: {" ".join(self._cmd)}')
 
+        return True
+        
         pass
 
 # '''
