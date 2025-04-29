@@ -77,7 +77,7 @@ class TestNGIAB(unittest.TestCase):
 
 
 class TestPyNGIAB(unittest.TestCase):
-    def test_ngiab_python_serial(self):
+    def test_pyngiab_serial(self):
         import sys
         sys.path.append('/ngen/pyngiab')        
         from pyngiab import PyNGIAB
@@ -88,7 +88,7 @@ class TestPyNGIAB(unittest.TestCase):
         self.assertEqual(run, True)
         pass
     
-    def test_ngiab_python_parallel(self):
+    def test_pyngiab_parallel(self):
         import sys
         sys.path.append('/ngen/pyngiab')        
         from pyngiab import PyNGIAB
@@ -103,6 +103,17 @@ class TestTeehr(unittest.TestCase):
     pass
 
 class TestNGIABDataPreprocess(unittest.TestCase):
+    def test_pyngiab_datapreprocess(self):
+        import sys
+        sys.path.append('/shared/pyngiab')        
+        from pyngiab import PyNGIABDataPreprocess
+
+        p = PyNGIABDataPreprocess('cat-7080') \
+            .subset() \
+            .generate_forcings('2022-01-01', '2022-01-28') \
+            .generate_realization() \
+            .run()
+                                               
     pass
 
 if __name__ == '__main__':
@@ -112,8 +123,9 @@ if __name__ == '__main__':
         zip_ref.extractall('/tests/')
         pass
 
-    unittest.main(exit=False)
+    #unittest.main(exit=False)
     #unittest.main(TestPyNGIAB(), exit=False)
+    unittest.main(TestNGIABDataPreprocess(), exit=False)
 
     ''' Cleanup '''
     from pathlib import Path

@@ -1,8 +1,10 @@
 import logging
 import os, glob
 import subprocess
+from enum import Enum
 import multiprocessing
 from pathlib import Path
+from datetime import datetime
 from packaging.version import Version
 
 class PyNGIAB:
@@ -15,7 +17,7 @@ class PyNGIAB:
         self._ngen_env = os.environ.copy()
         if not self._check_dependencies(venv_path):
             raise ModuleNotFoundError(f"Appropriate package versions required for 'ngen' not found. Possible fix is to create virtual environment with appropriate packages and pass virtual environment directory as an argument to initialize 'PyNGIAB' class e.g. `uv venv && uv pip install 'pydantic<2' and numpy={self._ngen_numpy_version}` and then `PyNGIAB(<data_dir>, venv_path=<path_to_venv>)`")
-        
+
         self._data_dir = data_dir
         self._serial_execution_mode = serial_execution_mode
         self._cpu_count = multiprocessing.cpu_count()
@@ -45,7 +47,7 @@ class PyNGIAB:
                     return True
                 pass
         return False
-        
+
     def _validate_dependency_versions(self, curr_env) -> bool:
         '''
         Subprocess enviornment can differ from python environment. Make sure appropriate
@@ -185,6 +187,80 @@ class PyNGIAB:
             os.chdir(cwd)
         return False
     pass
+##############################################################
+
+class DataSource(Enum):
+    NVM_RETRO_V3 = 'nvm'
+    AORC = 'aorc'
+    pass
+
+class PyNGIABDataPreprocess:
+    def __init__(self,
+                 input_feature: str,
+                 data_source: DataSource=DataSource.NVM_RETRO_V3):
+
+        self._date_format = '%Y-%m-%d'
+
+        self._cmd = ['python', '-m', 'ngiab_data_cli', '-i', input_feature]
+
+        self._cmd.append('--source')
+        self._cmd.append(data_source.value)
+
+        # required for forcings and realization
+        self._require_data_range = False
+        self._start_date = None
+        self._end_date = None
+
+        pass
+
+    def for_latlon(self,
+                   latitude: float,
+                   longitude: float):
+        self._cmd.append('--latlon')
+        self._cmd.append(f'{str(latitude)},{str(longitude)}')
+        return self
+
+    def for_vpu(self, vpu_id: int):
+        self._cmd.append('--vpu')
+        self._cmd.append(f'{str(vpu_id)}')
+        return self
+
+    def subset(self):
+        self._cmd.append('--subset')
+        return self
+
+    def generate_forcings(self, start_date: str=None, end_date: str=None):
+        self._cmd.append('--forcings')
+        self._require_date_range = True
+        if self._start_date is None:
+            self._start_date = datetime.strptime(start_date, self._date_format)
+        if self._end_date is None:
+            self._end_date = datetime.strptime(end_date, self._date_format)
+        return self
+
+    def generate_realization(self, start_date: str=None, end_date: str=None):
+        self._cmd.append('--realization')
+        self._require_date_range = True
+        if self._start_date is None:
+            self._start_date = datetime.strptime(start_date, self._date_format)
+        if self._end_date is None:
+            self._end_date = datetime.strptime(end_date, self._date_format)
+        return self
+
+    def run(self):
+        if self._require_date_range and (self._start_date is None or self._end_date is None):
+            raise ValueError('Date range need to be specified for either forcings or realization or both')
+
+        self._cmd.append('--start_date')
+        self._cmd.append(self._start_date.strftime(self._date_format))
+
+        self._cmd.append('--end_date')
+        self._cmd.append(self._end_date.strftime(self._date_format))
+
+        print(f'Running command: {" ".join(self._cmd)}')
+
+        pass
+
 
 # '''
 # Most of the code is copied from the following repository
