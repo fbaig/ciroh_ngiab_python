@@ -83,8 +83,11 @@ class TestPyNGIAB(unittest.TestCase):
         from pyngiab import PyNGIAB
 
         data_dir = test_data
-        test_ngiab = PyNGIAB(data_dir, serial_execution_mode=True)
-        run = test_ngiab.run()
+        try:
+            test_ngiab = PyNGIAB(data_dir, serial_execution_mode=True)
+            run = test_ngiab.run()
+        except:
+            run = False
         self.assertEqual(run, True)
         pass
 
@@ -94,8 +97,11 @@ class TestPyNGIAB(unittest.TestCase):
         from pyngiab import PyNGIAB
 
         data_dir = test_data
-        test_ngiab = PyNGIAB(data_dir)
-        run = test_ngiab.run()
+        try:
+            test_ngiab = PyNGIAB(data_dir)
+            run = test_ngiab.run()
+        except:
+            run = False
         self.assertEqual(run, True)
         pass
 
@@ -107,12 +113,14 @@ class TestNGIABDataPreprocess(unittest.TestCase):
         # import sys
         # sys.path.append('/shared/pyngiab')
         from pyngiab import PyNGIABDataPreprocess
-
-        p = PyNGIABDataPreprocess('cat-7080') \
-            .subset() \
-            .generate_forcings('2022-01-01', '2022-01-28') \
-            .generate_realization() \
-            .run()
+        try:
+            p = PyNGIABDataPreprocess('cat-7080') \
+                .subset() \
+                .generate_forcings('2022-01-01', '2022-01-28') \
+                .generate_realization() \
+                .run()
+        except:
+            p = False
         self.assertEqual(p, True)
         pass
     pass
