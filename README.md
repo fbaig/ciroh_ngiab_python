@@ -1,33 +1,33 @@
-# Python Wrapper for NextGen In A Box (NGIAB)
-Python wrapper for [NGIAB](https://github.com/CIROH-UA/NGIAB-CloudInfra/tree/main)'s shell scripts. This will facilitate NGIAB invocation directly from Jupyter environment without the need to execute terminal commands.
+# PyNGIAB
 
-This wrapper requires NGIAB already setup so should be tested and run inside NGIAB docker or natively setup NGIAB.
+**Stable JupyterHub Compatible NGIAB:** https://github.com/CIROH-UA/awi-ciroh-image/tree/ngen-2i2c 
 
-Most JupyterHub environments are Ubuntu based whereas NGIAB is built on `rockylinux9` as base image. The repository also contains scripts to create modified versions of NGIAB compatible with Jupyter based on `pangeo/pangeo-notebook` image.
+[!Note] This repository should be treated as having the latest (possibly buggy/nightly build) versions of the two main components of PyNGIAB.
 
-## Getting Started
-### Install
-```bash
-pip install git+https://github.com/fbaig/ciroh_pyngiab.git@pypi
-```
+---
 
-### Sample Data
- - Sample data is available in `/tests/` directory
- - Alternatively, you can also follow "Quick Start Guide" from [NGIAB](https://github.com/CIROH-UA/NGIAB-CloudInfra/tree/main) to get sample data
+PyNGIAB is designed to allow execution of an end-to-end hydrologic modeling workflow using the [Nextgen framework](https://github.com/NOAA-OWP/ngen) in Python from a Jupyter environment. To this end, there are two major components of PyNGIAB
 
-### Generate Data Using [`ngiab_data_preprocess`](https://github.com/CIROH-UA/NGIAB_data_preprocess/tree/main) utility
-The utility is part of the docker image and can be executed to download and generate input data for the NGIAB model.
+1. JupyterHub (e.g. 2i2c) compatible NGIAB.
 
-```bash
-python -m ngiab_data_cli -i cat-5173 -a --start 2022-01-01 --end 2022-02-28
-```
-For further ways to run the utility, please refer to [NBIAB Data Preprocess documentation](https://github.com/CIROH-UA/NGIAB_data_preprocess/tree/main?tab=readme-ov-file#examples).
+Most JupyterHub environments are Ubuntu based whereas [NGIAB](https://github.com/CIROH-UA/NGIAB-CloudInfra) is built on `rockylinux9` as base image. This repository contains scripts to create modified versions of NGIAB compatible with Jupyter based on `pangeo/pangeo-notebook` image.
 
-### Running Jupyter with NGIAB
- - A compiled image is available at [https://quay.io/repository/fbaig25/ngiab-2i2c](https://quay.io/repository/fbaig25/ngiab-2i2c) 
- - The same image can be used to launch [2i2c staging JupyterHub](https://staging.ciroh.awi.2i2c.cloud) with custom image
- - Local Jupyter environment with `ngen` can be launched using following
-    - Make sure to mount appropriate data directory 
+2. Python wrapper libraries for NGIAB.
+
+Python wrappers for [data preprocessing](https://github.com/CIROH-UA/NGIAB_data_preprocess) and [NGIAB](https://github.com/CIROH-UA/NGIAB-CloudInfra)'s model execution shell scripts. This facilitates NGIAB invocation directly from Jupyter environment without the need to execute terminal commands.
+
+
+## JupyterHub (e.g. 2i2c) compatible NGIAB
+The JupyterHub environment with pre-configured NGIAB can be accessed via 
+
+- [CIROH 2i2c JupyterHub Production](http://staging.ciroh.awi.2i2c.cloud/)
+- [CIROH 2i2c JupyterHub Staging/Dev](http://staging.ciroh.awi.2i2c.cloud/)
+- Run Local JupyterHub
+  - A compiled image is available at [https://quay.io/repository/fbaig25/ngiab-2i2c](https://quay.io/repository/fbaig25/ngiab-2i2c). Alternatively, you can use following to build local image
+    - `Dockerfile:` Creates `pangeo/pangeo-notebook:2024.04.08` based NGIAB image. The image also adheres to [template](https://github.com/CIROH-UA/awi-ciroh-image/tree/main) required for 2i2c JupyterHub environment provided by CIROH.
+    - `docker_run.sh`: Builds a local image with `Jupyter`, `ngen` and `2i2c` packages.
+    - Once built successfully, Jupyter interface can usually be accessed at `http://127.0.0.1:8888/`
+  - Local Jupyter environment with `ngen` can be launched using following (Make sure to mount appropriate data directory) 
 ```
 docker run -it \
        -v "${PWD}":/shared/ \
@@ -35,13 +35,36 @@ docker run -it \
        quay.io/fbaig25/ngiab-2i2c:latest \
        jupyter lab --ip 0.0.0.0 /shared
 ```
+- [Upcoming] [The I-GUIDE Platform JupyterHub](https://jupyter.iguide.illinois.edu/)
 
-## NGIAB Pyhton Wrapper
- - `pyngiab/pyngiab.py` has the python wrapper code which can imported as a python module
- - `test_ngiab.py` has code showing usage of the python wrapper module
-    - Make sure to load appropriate dependencies by running the python script as
-`source /ngen/.venv/bin/activate && python test_ngiab.py`
- - Alternatively, in Jupyter environment, make sure to use `NGIAB` kernel to load appropriate dependencies
+
+### Python wrapper libraries
+
+If not available, `PyNGIAB` module can be installed via 
+```bash
+pip install git+https://github.com/fbaig/ciroh_pyngiab.git
+```
+
+### (1) Data Pre-processing
+Above container images come installed with [`ngiab_data_preprocess`](https://github.com/CIROH-UA/NGIAB_data_preprocess/tree/main) utility which can be used to (1) subset data, (2) generate forcings and (3) generate realization. These are used as input to execute the Nextgen model framework.
+
+```bash
+python -m ngiab_data_cli -i cat-5173 -a --start 2022-01-01 --end 2022-02-28
+```
+For further details about the use of the utility, please refer to [NBIAB Data Preprocess documentation](https://github.com/CIROH-UA/NGIAB_data_preprocess/tree/main?tab=readme-ov-file#examples).
+
+#### Sample Data
+ - Sample data is available in `/tests/` directory in the container image
+ - Alternatively, you can also follow "Quick Start Guide" from [NGIAB](https://github.com/CIROH-UA/NGIAB-CloudInfra/tree/main) to manually download sample data
+
+
+
+
+### (2) Model Execution
+- `pyngiab/` has the python code files for `PyNGAIB` modules
+- `tests/` has unit tests and common CI/CD workflows for automated testing
+- `test_ngiab.py` has code showing usage of the python wrapper module
+
 ```python
 from pyngiab import PyNGIAB
 
@@ -55,9 +78,3 @@ test_ngiab.run()
 test_ngiab_serial = PyNGIAB(data_dir, serial_execution_mode=True)
 test_ngiab_serial.run()
 ```
-
-## Compiling From Source
- - `ngiab-pangeo/` directory contains scripts to generate `pangeo/pangeo-notebook:2024.04.08` based NGIAB image. The image also adheres to [template](https://github.com/CIROH-UA/awi-ciroh-image/tree/main) required for 2i2c JupyterHub environment provided by CIROH.
-    - `docker_run.sh` build a local image with `Jupyter`, `ngen` and `2i2c` packages.
-    - Once built successfully, the script also launches a container for local working.
-	- [!WARNING] `ngiab-pangeo`, as of now, builds without `/ngen/troute_url` and `/ngen/ngen_url`
