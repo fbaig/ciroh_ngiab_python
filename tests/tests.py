@@ -1,4 +1,7 @@
-import unittest
+import os, unittest
+
+test_data = '/tests/cat-7080'
+ngen_env = {**os.environ, 'PATH': f'/ngen/.venv/bin:' + os.environ['PATH']}
 
 class TestJupyter(unittest.TestCase):
     def test_jupyter_run(self):
@@ -15,15 +18,14 @@ class TestJupyter(unittest.TestCase):
 
     pass
 
-test_data = '/tests/cat-7080'
-
 class TestNGIAB(unittest.TestCase):
     def test_ngiab_install(self):
         import subprocess
         result = subprocess.run('/dmod/bin/ngen',
                                 capture_output=True,
                                 text=True,
-                                check=True)
+                                check=True,
+                                env=ngen_env)
         self.assertEqual(result.returncode, 0)
         self.assertIn('NGen Framework', result.stdout)
         self.assertIn('NetCDF', result.stdout)
@@ -36,7 +38,8 @@ class TestNGIAB(unittest.TestCase):
         result = subprocess.run('/dmod/bin/ngen-serial',
                                 capture_output=True,
                                 text=True,
-                                check=True)
+                                check=True,
+                                env=ngen_env)
         self.assertEqual(result.returncode, 0)
         self.assertIn('NGen Framework', result.stdout)
         self.assertIn('NetCDF', result.stdout)
@@ -50,7 +53,8 @@ class TestNGIAB(unittest.TestCase):
         result = subprocess.run('/dmod/bin/ngen-parallel',
                                 capture_output=True,
                                 text=True,
-                                check=True)
+                                check=True,
+                                env=ngen_env)
         self.assertEqual(result.returncode, 0)
         self.assertIn('NGen Framework', result.stdout)
         self.assertIn('NetCDF', result.stdout)
@@ -63,7 +67,8 @@ class TestNGIAB(unittest.TestCase):
         import subprocess
         result = subprocess.run('/dmod/bin/partitionGenerator',
                                 capture_output=True,
-                                text=True
+                                text=True,
+                                env=ngen_env
                                 #check=True
                                 )
         self.assertEqual(result.returncode, 255)
@@ -78,8 +83,6 @@ class TestNGIAB(unittest.TestCase):
 
 class TestPyNGIAB(unittest.TestCase):
     def test_pyngiab_serial(self):
-        # import sys
-        # sys.path.append('/ngen/pyngiab')
         from pyngiab import PyNGIAB
 
         data_dir = test_data
@@ -92,8 +95,6 @@ class TestPyNGIAB(unittest.TestCase):
         pass
 
     def test_pyngiab_parallel(self):
-        # import sys
-        # sys.path.append('/ngen/pyngiab')
         from pyngiab import PyNGIAB
 
         data_dir = test_data
@@ -110,8 +111,6 @@ class TestTeehr(unittest.TestCase):
 
 class TestNGIABDataPreprocess(unittest.TestCase):
     def test_pyngiab_datapreprocess(self):
-        # import sys
-        # sys.path.append('/shared/pyngiab')
         from pyngiab import PyNGIABDataPreprocess
         try:
             p = PyNGIABDataPreprocess('cat-7080') \

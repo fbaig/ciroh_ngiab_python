@@ -129,6 +129,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxcomposite1 libxdamage1 libxrandr2 libxt6 libatk1.0-0 libpango-1.0-0 \
     libgdk-pixbuf2.0-0 fonts-liberation \
     #---------------------------------------------
+    # TEEHR: (https://rtiinternational.github.io/teehr/getting_started/index.html)
+    #---------------------------------------------
+    openjdk-17-jdk \
+    #---------------------------------------------
     # 2i2c: Google Cloud SDK (gcloud, gsutil)
     #---------------------------------------------
     && echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] http://packages.cloud.google.com/apt cloud-sdk main" | tee -a /etc/apt/sources.list.d/google-cloud-sdk.list \
@@ -142,6 +146,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     # && apt-get install -y --no-install-recommends nodejs \
     && rm -rf /var/lib/apt/lists/*
 
+# Set environment for ngen
 RUN ln -s /dmod/bin/ngen /usr/local/bin/ngen
 ENV FC=gfortran NETCDF=/usr/include PATH=$PATH:/usr/bin/mpich
 
@@ -156,10 +161,13 @@ RUN mkdir -p /opt/firefox && \
 ENV BROWSER=/usr/local/bin/firefox
 ENV XDG_BROWSER=/usr/local/bin/firefox
 
+# Set environment variables for TEEHR
+ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+ENV PATH=$PATH:$JAVA_HOME/bin
+
 RUN pip3 install uv && \
-    uv pip install --system --no-cache-dir /tmp/*.whl netCDF4==1.6.3 \
-    numpy==$(/dmod/bin/ngen --info | grep -e 'NumPy Version: ' | cut -d ':' -f 2 | uniq | xargs) \
-    /ngen/ngen/extern/lstm --extra-index-url https://download.pytorch.org/whl/cpu \
+    uv pip install --system --no-cache-dir \
+    numpy==$(/dmod/bin/ngen --info | grep -m 1 -e 'NumPy Version: ' | cut -d ':' -f 2 | uniq | xargs) \
     jupyterlab_vim \
     #---------------------------------------------
     # 2i2c: Install GIS packages
@@ -178,13 +186,23 @@ RUN pip3 install uv && \
     # 2i2c: To enable linux desktop
     #---------------------------------------------
     jupyter-remote-desktop-proxy \
-    websockify
+    websockify \
+    #---------------------------------------------
+    # 2i2c: Hydroshare packages
+    #---------------------------------------------
+    git+https://github.com/hydroshare/nbfetch.git@hspuller-auth \
+    dask_labextension \
     #---------------------------------------------
     # 2i2c: To enable venv kernels in Jupyter
     #---------------------------------------------
     #ipykernel
+    #---------------------------------------------
+    # Setup and install ngiab_data_preprocess module to allow preparing data for ngiab
+    # Download hydrofabric and update permissions to make '.ngiab' available to non-root user
+    #---------------------------------------------
+    ngiab_data_preprocess==4.2.*
+    # && uv run python -c "from data_sources.source_validation import download_and_update_hf; download_and_update_hf();"
 
-RUN rm -rf /tmp/*.whl
 RUN echo "/dmod/shared_libs/" >> /etc/ld.so.conf.d/ngen.conf && ldconfig -v
 
 # Upgrade colorama to resolve dependency conflict
@@ -193,10 +211,10 @@ RUN uv pip install --system --upgrade colorama
 # Install nb_black separately to address metadata generation issue
 RUN uv pip install --system --no-cache-dir nb_black==1.0.5
 
-# Install nbfetch for hydroshare compatible with pydantic1
-RUN uv pip install --system --no-cache-dir \
-    git+https://github.com/hydroshare/nbfetch.git@hspuller-auth \
-    dask_labextension
+# Install nbfetch for hydroshare compatible with pydantic2
+#RUN uv pip install --system --no-cache-dir \
+    #git+https://github.com/hydroshare/nbfetch.git@hspuller-auth \
+    #dask_labextension
 # enable jupyter_server extension
 RUN jupyter server extension enable --py nbfetch --sys-prefix
 
@@ -212,15 +230,15 @@ RUN sed -i 's/\"default\": true/\"default\": false/g' /srv/conda/envs/notebook/s
 # are installed in a venv which will be referenced by the PyNGIAB package
 ##########
 RUN uv venv --system-site-packages \
-    && uv pip install --no-cache-dir 'pydantic<2' \
-    numpy==$(/dmod/bin/ngen --info | grep -e 'NumPy Version: ' | cut -d ':' -f 2 | uniq | xargs) \
-    # && uv pip install --system --no-cache-dir 'pydantic<2' \
-    #---------------------------------------------
-    # Setup and install ngiab_data_preprocess module to allow preparing data for ngiab
-    # Download hydrofabric and update permissions to make '.ngiab' available to non-root user
-    #---------------------------------------------
-    ngiab_data_preprocess==4.2.*
-    # && uv run python -c "from data_sources.source_validation import download_and_update_hf; download_and_update_hf();"
+    && uv pip install --no-cache-dir \
+    /tmp/*.whl \
+    netCDF4==1.6.3 \
+    numpy==$(/dmod/bin/ngen --info | grep -m 1 -e 'NumPy Version: ' | cut -d ':' -f 2 | uniq | xargs) \
+    'pydantic<2' \
+    # To avoid issues with installing lstm from seperate pip index
+    && uv pip install --no-cache-dir \
+       /ngen/ngen/extern/lstm --extra-index-url https://download.pytorch.org/whl/cpu \
+    && rm -rf /tmp/*.whl
 
 # Make this venv available as JupyterHub kernel
 # ENV PATH=/ngen/.venv/bin:$PATH
@@ -232,18 +250,11 @@ ENV RDMAV_FORK_SAFE=1
 
 
 # ##########
-# # Teehr (https://github.com/arpita0911patel/ngiab-teehr/tree/main)
+# # Teehr (https://rtiinternational.github.io/teehr/getting_started/index.html)
 # ##########
 # WORKDIR /ngen/teehr
 
-# RUN apt-get update && apt-get install -y git openjdk-11-jdk
-
-# ENV JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
-# ENV PATH=$PATH:$JAVA_HOME/bin
-
 # RUN git clone https://github.com/arpita0911patel/ngiab-teehr.git
-
-# RUN pip install uv
 # RUN uv pip install --system --no-cache-dir -r ngiab-teehr/requirements.txt
 
 # RUN cp -r ngiab-teehr/scripts/* . \
@@ -252,8 +263,7 @@ ENV RDMAV_FORK_SAFE=1
 ##########
 # PyNGIAB (https://github.com/fbaig/ciroh_pyngiab)
 ##########
-
-RUN pip install git+https://github.com/fbaig/ciroh_pyngiab.git@pypi
+RUN pip install git+https://github.com/fbaig/ciroh_pyngiab.git
 
 WORKDIR /ngen/
 USER ${NB_USER}
