@@ -7,13 +7,6 @@ ENV NGEN_BRANCH=ngiab
 
 USER root
 
-###################################
-# remove conda/mamba gcc which seems to be broken in pangeo/pangeo-notebook:2024.04.08
-# when using with cmake
-# Reference: https://github.com/pangeo-data/pangeo-docker-images/issues/604
-###################################
-# RUN mamba remove --prefix /srv/conda/envs/notebook gcc gcc_linux-64 gcc_impl_linux-64 -y
-
 # Install dependencies
 RUN apt-get update && apt-get install -y \
     vim gfortran sqlite3 libsqlite3-dev \
@@ -139,11 +132,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key --keyring /usr/share/keyrings/cloud.google.gpg  add - \
     && apt-get update -y \
     && apt-get install google-cloud-sdk -y --no-install-recommends \
-    # #---------------------------------------------
-    # # 2i2c: Nodejs and npm
-    # #---------------------------------------------
-    # && curl -sL https://deb.nodesource.com/setup_16.x | bash - \
-    # && apt-get install -y --no-install-recommends nodejs \
     && rm -rf /var/lib/apt/lists/*
 
 # Set environment for ngen
@@ -157,7 +145,7 @@ RUN mkdir -p /opt/firefox && \
     ln -s /opt/firefox/firefox /usr/local/bin/firefox && \
     rm /tmp/firefox.tar.bz2
 
-# Set Firefox as the default browser (optional)
+# Set Firefox as the default browser
 ENV BROWSER=/usr/local/bin/firefox
 ENV XDG_BROWSER=/usr/local/bin/firefox
 
@@ -169,6 +157,8 @@ RUN pip3 install uv && \
     uv pip install --system --no-cache-dir \
     numpy==$(/dmod/bin/ngen --info | grep -m 1 -e 'NumPy Version: ' | cut -d ':' -f 2 | uniq | xargs) \
     jupyterlab_vim \
+    teehr==0.4.* \
+    git-lfs==1.6 \
     #---------------------------------------------
     # 2i2c: Install GIS packages
     #---------------------------------------------
@@ -188,7 +178,7 @@ RUN pip3 install uv && \
     jupyter-remote-desktop-proxy \
     websockify \
     #---------------------------------------------
-    # 2i2c: Hydroshare packages
+    # 2i2c: Hydroshare & teehr packages
     #---------------------------------------------
     git+https://github.com/hydroshare/nbfetch.git@hspuller-auth \
     dask_labextension \
@@ -197,11 +187,10 @@ RUN pip3 install uv && \
     #---------------------------------------------
     #ipykernel
     #---------------------------------------------
-    # Setup and install ngiab_data_preprocess module to allow preparing data for ngiab
-    # Download hydrofabric and update permissions to make '.ngiab' available to non-root user
+    # Misc:
+    #   - TEEHR: Download the required JAR files for Spark to interact with AWS S3.
     #---------------------------------------------
-    ngiab_data_preprocess==4.2.*
-    # && uv run python -c "from data_sources.source_validation import download_and_update_hf; download_and_update_hf();"
+    && uv run python -m teehr.utils.install_spark_jars
 
 RUN echo "/dmod/shared_libs/" >> /etc/ld.so.conf.d/ngen.conf && ldconfig -v
 
@@ -211,10 +200,6 @@ RUN uv pip install --system --upgrade colorama
 # Install nb_black separately to address metadata generation issue
 RUN uv pip install --system --no-cache-dir nb_black==1.0.5
 
-# Install nbfetch for hydroshare compatible with pydantic2
-#RUN uv pip install --system --no-cache-dir \
-    #git+https://github.com/hydroshare/nbfetch.git@hspuller-auth \
-    #dask_labextension
 # enable jupyter_server extension
 RUN jupyter server extension enable --py nbfetch --sys-prefix
 
@@ -228,16 +213,26 @@ RUN sed -i 's/\"default\": true/\"default\": false/g' /srv/conda/envs/notebook/s
 # specific version of numpy.
 # In order for ngen to work with 2i2c and hydroshare packages, conflicting packages
 # are installed in a venv which will be referenced by the PyNGIAB package
+#
+# WARN: Everything installed after this using `uv` will be installed in the venv
 ##########
 RUN uv venv --system-site-packages \
-    && uv pip install --no-cache-dir \
-    /tmp/*.whl \
-    netCDF4==1.6.3 \
-    numpy==$(/dmod/bin/ngen --info | grep -m 1 -e 'NumPy Version: ' | cut -d ':' -f 2 | uniq | xargs) \
-    'pydantic<2' \
     # To avoid issues with installing lstm from seperate pip index
     && uv pip install --no-cache-dir \
-       /ngen/ngen/extern/lstm --extra-index-url https://download.pytorch.org/whl/cpu \
+          /ngen/ngen/extern/lstm --extra-index-url https://download.pytorch.org/whl/cpu \
+    && uv pip install --no-cache-dir \
+    /tmp/*.whl \
+    #netCDF4==1.6.3 \
+    netCDF4>=1.6.5 \
+    numpy==$(/dmod/bin/ngen --info | grep -m 1 -e 'NumPy Version: ' | cut -d ':' -f 2 | uniq | xargs) \
+    'pydantic<2' \
+    #---------------------------------------------
+    # Setup and install ngiab_data_preprocess module to allow preparing data for ngiab
+    #   - [Optional] Download default hydrofabric for ngiab_data_preprocess
+    #---------------------------------------------
+    ngiab_data_preprocess==4.2.* \
+    #&& uv run python -c "from data_sources.source_validation import download_and_update_hf; \
+    #			 download_and_update_hf();" \
     && rm -rf /tmp/*.whl
 
 # Make this venv available as JupyterHub kernel
@@ -248,28 +243,14 @@ RUN uv venv --system-site-packages \
 # To avoid error for ngen-parallel
 ENV RDMAV_FORK_SAFE=1
 
-
-# ##########
-# # Teehr (https://rtiinternational.github.io/teehr/getting_started/index.html)
-# ##########
-# WORKDIR /ngen/teehr
-
-# RUN git clone https://github.com/arpita0911patel/ngiab-teehr.git
-# RUN uv pip install --system --no-cache-dir -r ngiab-teehr/requirements.txt
-
-# RUN cp -r ngiab-teehr/scripts/* . \
-#     && rm -r ngiab-teehr
-
 ##########
 # PyNGIAB (https://github.com/fbaig/ciroh_pyngiab)
 ##########
 RUN pip install git+https://github.com/fbaig/ciroh_pyngiab.git
 
-WORKDIR /ngen/
-USER ${NB_USER}
 COPY ./tests /tests
 
-USER root
+#USER root
 # Update permissions to allow Jupyter non-root user to install and use packages
 RUN chown -R ${NB_USER}:${NB_USER} \
     /home/jovyan/ \
@@ -279,6 +260,7 @@ RUN chown -R ${NB_USER}:${NB_USER} \
     && chmod +x /tests/test-entrypoint.sh
 
 USER ${NB_USER}
+WORKDIR /ngen/
 RUN echo "export PS1='\u\[\033[01;32m\]@ngiab_dev\[\033[00m\]:\[\033[01;35m\]\W\[\033[00m\]\$ '" >> ~/.bashrc
 # # Download hydrofabric when starting container
 # ENTRYPOINT uv run python -c "from data_sources.source_validation import download_and_update_hf; download_and_update_hf();"
