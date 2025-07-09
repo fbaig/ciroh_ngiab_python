@@ -54,7 +54,7 @@ class PyNGIAB:
         pydantic_v: Version = self._get_subprocess_python_package_version('pydantic', curr_env)
         numpy_v: Version = self._get_subprocess_python_package_version('numpy', curr_env)
 
-        cmd_str = "/dmod/bin/ngen --info | grep -e 'NumPy Version: ' | cut -d ':' -f 2 | uniq | xargs"
+        cmd_str = "/dmod/bin/ngen --info | grep -m 1 -e 'NumPy Version: ' | cut -d ':' -f 2 | uniq | xargs"
         self._ngen_numpy_version = str(subprocess.check_output(cmd_str,
                                                                text=True,
                                                                shell=True)).strip()
