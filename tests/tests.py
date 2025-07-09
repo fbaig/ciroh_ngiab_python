@@ -35,7 +35,7 @@ if __name__ == '__main__':
 
     ''' Test cases for TEEHR module (https://github.com/RTIInternational/teehr/)
     Note: TEEHR has its own test cases which are invoked from commandline
-    Please see /tests/test-entrypoint.sh
+    Please see /tests/test-entrypoint.sh 
     '''
     # teehr_tests = unittest.TestLoader().discover('.', pattern = 'test_pyngiab*.py')
     # unittest.TextTestRunner(verbosity=1).run(teehr_tests)

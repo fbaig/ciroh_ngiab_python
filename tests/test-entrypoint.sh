@@ -11,4 +11,5 @@ cd /tests && \
     && git config core.sparseCheckout true \
     && echo "tests/" >> .git/info/sparse-checkout \
     && git pull origin main
-/srv/conda/envs/notebook/bin/pytest /tests/teehr/tests/ 2>&1 | tee /tests/teehr_tests.log
+# Tests need to be executed from a specific directory (Thanks to Matt from RTI for the help)
+cd /tests/teehr/ && /srv/conda/envs/notebook/bin/pytest tests/ 2>&1 | tee /tests/teehr_tests.log
