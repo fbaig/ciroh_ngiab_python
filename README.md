@@ -1,4 +1,14 @@
-# PyNGIAB
+# PyNGIAB (Not Maintained Anymore)
+
+## Repository Transfer Notification
+This is to inform you that `PyNGIAB` has a new home at [CIROH-UA](https://github.com/CIROH-UA) on GitHub. 
+
+### What this means: 
+
+- **Repository Location**: This repository has been archived. The most up to date version of `PyNGIAB` can now be accessed at [https://github.com/CIROH-UA/ciroh_pyngiab](https://github.com/CIROH-UA/ciroh_pyngiab)
+- **Recommended Action**: Updating local clones to point to the new repository URL is strongly recommended to avoid potential confusion or issues. 
+
+---
 
 **Stable JupyterHub Compatible NGIAB:** https://github.com/CIROH-UA/awi-ciroh-image/tree/ngen-2i2c 
 
